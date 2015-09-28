@@ -11,12 +11,12 @@ type DFA struct {
 }
 
 func (dfa *DFA) Execute(input string) bool {
-	state := dfa.q0
+	q := dfa.q0
 	for _, runeValue := range input {
-		state = dfa.delta[state][Symbol(runeValue)]
-		if state == "" {
+		q = dfa.delta[q][Symbol(runeValue)]
+		if q == "" {
 			return false
 		}
 	}
-	return dfa.final[state]
+	return dfa.final[q]
 }
