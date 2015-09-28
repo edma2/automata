@@ -40,3 +40,8 @@ func (dfa *NFA) NewTransition(old State, input Symbol, new []State) {
 	}
 	transition[input] = new
 }
+
+// Compile this NFA to an executable DFA.
+func (dfa *NFA) Compile() *DFA {
+	return nil
+}
