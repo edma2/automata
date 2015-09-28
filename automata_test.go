@@ -1,4 +1,4 @@
-package automata_test
+package automata
 
 import (
 	"testing"
