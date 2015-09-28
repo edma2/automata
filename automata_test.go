@@ -12,6 +12,13 @@ var uniqTests = []struct {
 	{[]string{}, []string{}},
 }
 
+func TestNfaToDfaState(t *testing.T) {
+	nfaStates := []State{"A", "B"}
+	if q := nfaToDfaState(nfaStates); q != "{A,B}" {
+		t.Errorf("input: %s, actual: %s, expected: {A,B}", nfaStates, q)
+	}
+}
+
 func TestUniq(t *testing.T) {
 	for _, test := range uniqTests {
 		actual := uniq(test.input)
