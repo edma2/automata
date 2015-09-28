@@ -32,6 +32,6 @@ func TestChessboard(t *testing.T) {
 
 	dfa := nfa.Compile()
 	if ok := dfa.Execute("rbb"); !ok {
-		t.Error("rbb should be be an accepted string!")
+		t.Error("rbb must be accepted")
 	}
 }
