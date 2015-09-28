@@ -1,12 +1,12 @@
-package main
+package automata_test
 
 import (
-	"fmt"
+	"testing"
 
 	"github.com/edma2/coursera/automata"
 )
 
-func main() {
+func TestChessboard(t *testing.T) {
 	// Chessboard
 	nfa := automata.NewNFA("1", []automata.State{"9"})
 
@@ -30,5 +30,8 @@ func main() {
 	nfa.NewTransition("8", 'b', []automata.State{"5", "7", "9"})
 	nfa.NewTransition("9", 'b', []automata.State{"5"})
 
-	fmt.Println(nfa)
+	dfa := nfa.Compile()
+	if ok := dfa.Execute("rbb"); !ok {
+		t.Error("rbb should be be an accepted string!")
+	}
 }
