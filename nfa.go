@@ -24,19 +24,19 @@ type NFA struct {
 }
 
 func NewNFA(q0 State, final []State) *NFA {
-	dfa := NFA{q0: q0, delta: make(TransitionFunc)}
-	dfa.final = make(map[State]bool)
+	nfa := NFA{q0: q0, delta: make(TransitionFunc)}
+	nfa.final = make(map[State]bool)
 	for i := 0; i < len(final); i++ {
-		dfa.final[final[i]] = true
+		nfa.final[final[i]] = true
 	}
-	return &dfa
+	return &nfa
 }
 
-func (dfa *NFA) NewTransition(old State, input Symbol, new []State) {
-	transition := dfa.delta[old]
+func (nfa *NFA) NewTransition(old State, input Symbol, new []State) {
+	transition := nfa.delta[old]
 	if transition == nil {
 		transition = make(Transition)
-		dfa.delta[old] = transition
+		nfa.delta[old] = transition
 	}
 	transition[input] = new
 }
