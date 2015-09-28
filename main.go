@@ -3,22 +3,32 @@ package main
 import (
 	"fmt"
 
-	"github.com/edma2/coursera/automata/dfa"
+	"github.com/edma2/coursera/automata/nfa"
 )
 
 func main() {
-	// DFA with no consecutive 1's
-	d := dfa.NewDFA("A", []string{"A", "B"})
-	d.NewTransition("A", '0', "A")
-	d.NewTransition("A", '1', "B")
-	d.NewTransition("B", '0', "A")
-	d.NewTransition("B", '1', "C")
-	d.NewTransition("C", '0', "C")
-	d.NewTransition("C", '1', "C")
+	// Chessboard
+	a := nfa.NewNFA("1", []nfa.State{"9"})
 
-	fmt.Println(d.Execute("011"))
-	fmt.Println(d.Execute("0101"))
-	fmt.Println(d.Execute(""))
-	fmt.Println(d.Execute("01010100001010111"))
-	fmt.Println(d.Execute("000000000000"))
+	a.NewTransition("1", 'r', []nfa.State{"2", "4"})
+	a.NewTransition("2", 'r', []nfa.State{"4", "6"})
+	a.NewTransition("3", 'r', []nfa.State{"2", "6"})
+	a.NewTransition("4", 'r', []nfa.State{"2", "8"})
+	a.NewTransition("5", 'r', []nfa.State{"2", "4", "6", "8"})
+	a.NewTransition("6", 'r', []nfa.State{"2", "8"})
+	a.NewTransition("7", 'r', []nfa.State{"4", "8"})
+	a.NewTransition("8", 'r', []nfa.State{"4", "6"})
+	a.NewTransition("9", 'r', []nfa.State{"6", "8"})
+
+	a.NewTransition("1", 'b', []nfa.State{"5"})
+	a.NewTransition("2", 'b', []nfa.State{"1", "3", "5"})
+	a.NewTransition("3", 'b', []nfa.State{"5"})
+	a.NewTransition("4", 'b', []nfa.State{"1", "5", "7"})
+	a.NewTransition("5", 'b', []nfa.State{"1", "3", "7", "9"})
+	a.NewTransition("6", 'b', []nfa.State{"3", "5", "9"})
+	a.NewTransition("7", 'b', []nfa.State{"5"})
+	a.NewTransition("8", 'b', []nfa.State{"5", "7", "9"})
+	a.NewTransition("9", 'b', []nfa.State{"5"})
+
+	fmt.Println(a)
 }
