@@ -1,5 +1,5 @@
 // Nondeterministic finite automatons (with ε-transitions)
-package nfa
+package automata
 
 // A NFA-ε is represented formally by a 5-tuple, (Q, Σ, Δ, q0, F), consisting of
 //
