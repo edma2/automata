@@ -13,9 +13,9 @@ var uniqTests = []struct {
 }
 
 func TestNfaToDfaState(t *testing.T) {
-	nfaStates := []State{"A", "B"}
-	if q := nfaToDfaState(nfaStates); q != "{A,B}" {
-		t.Errorf("input: %s, actual: %s, expected: {A,B}", nfaStates, q)
+	qs := []State{"A", "B"}
+	if q := nfaToDfaState(qs); q != "{A,B}" {
+		t.Errorf("input: %s, actual: %s, expected: {A,B}", qs, q)
 	}
 }
 

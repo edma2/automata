@@ -38,17 +38,16 @@ func NewNFA(q0 State, final []State) *NFA {
 	return &nfa
 }
 
-func (nfa *NFA) NewTransition(old State, input Symbol, new []State) {
-	transition := nfa.delta[old]
+func (nfa *NFA) NewTransition(q State, input Symbol, qs []State) {
+	transition := nfa.delta[q]
 	if transition == nil {
 		transition = make(Transition)
-		nfa.delta[old] = transition
+		nfa.delta[q] = transition
 	}
-	transition[input] = new
+	transition[input] = qs
 }
 
-// Return a copy of a without duplicate strings.
-// Assumes a is already sorted.
+// Return a copy of sorted slice without duplicate strings.
 func uniq(a []string) []string {
 	newa := make([]string, len(a))
 	i := -1
@@ -65,13 +64,13 @@ func uniq(a []string) []string {
 	}
 }
 
-func nfaToDfaState(states []State) State {
-	strStates := make([]string, len(states))
-	for i := 0; i < len(states); i++ {
-		strStates[i] = string(states[i])
+func nfaToDfaState(qs []State) State {
+	qss := make([]string, len(qs))
+	for i := 0; i < len(qs); i++ {
+		qss[i] = string(qs[i])
 	}
-	sort.Strings(strStates)
-	return State(fmt.Sprintf("{%s}", strings.Join(uniq(strStates), ",")))
+	sort.Strings(qss)
+	return State(fmt.Sprintf("{%s}", strings.Join(uniq(qss), ",")))
 }
 
 // Compile this NFA to an executable DFA.
