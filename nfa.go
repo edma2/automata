@@ -1,6 +1,12 @@
 // Nondeterministic finite automatons (with ε-transitions)
 package automata
 
+import (
+	"fmt"
+	"sort"
+	"strings"
+)
+
 // A NFA-ε is represented formally by a 5-tuple, (Q, Σ, Δ, q0, F), consisting of
 //
 // a finite set of states Q
@@ -39,6 +45,33 @@ func (nfa *NFA) NewTransition(old State, input Symbol, new []State) {
 		nfa.delta[old] = transition
 	}
 	transition[input] = new
+}
+
+// Return a copy of a without duplicate strings.
+// Assumes a is already sorted.
+func uniq(a []string) []string {
+	newa := make([]string, len(a))
+	i := -1
+	for _, s := range a {
+		if i < 0 || newa[i] != s {
+			i = i + 1
+			newa[i] = s
+		}
+	}
+	if i < 0 {
+		return []string{}
+	} else {
+		return newa[0 : i+1]
+	}
+}
+
+func nfaToDfaState(states []State) State {
+	strStates := make([]string, len(states))
+	for i := 0; i < len(states); i++ {
+		strStates[i] = string(states[i])
+	}
+	sort.Strings(strStates)
+	return State(fmt.Sprintf("{%s}", strings.Join(uniq(strStates), ",")))
 }
 
 // Compile this NFA to an executable DFA.
