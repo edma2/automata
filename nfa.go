@@ -74,6 +74,8 @@ func foldStates(qs []State) State {
 }
 
 // Compile this NFA to an executable DFA.
-func (dfa *NFA) Compile() *DFA {
-	return nil
+func (nfa *NFA) Compile() *DFA {
+	dfa := DFA{}
+	dfa.q0 = foldStates([]State{nfa.q0})
+	return &dfa
 }
