@@ -64,7 +64,7 @@ func uniq(a []string) []string {
 	}
 }
 
-func nfaToDfaState(qs []State) State {
+func foldStates(qs []State) State {
 	qss := make([]string, len(qs))
 	for i := 0; i < len(qs); i++ {
 		qss[i] = string(qs[i])

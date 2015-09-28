@@ -12,9 +12,9 @@ var uniqTests = []struct {
 	{[]string{}, []string{}},
 }
 
-func TestNfaToDfaState(t *testing.T) {
+func TestFoldStates(t *testing.T) {
 	qs := []State{"A", "B"}
-	if q := nfaToDfaState(qs); q != "{A,B}" {
+	if q := foldStates(qs); q != "{A,B}" {
 		t.Errorf("input: %s, actual: %s, expected: {A,B}", qs, q)
 	}
 }
