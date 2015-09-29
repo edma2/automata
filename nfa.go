@@ -25,7 +25,26 @@ type Symbol rune
 // a finite set of input symbols Σ
 // a transition function Δ : Q × (Σ ∪ {ε}) → P(Q)
 
-type TransitionFunc map[State]map[Symbol]*StateSet
+type Step map[Symbol]*StateSet
+type TransitionFunc map[State]Step
+
+func (fn TransitionFunc) get(s State) Step {
+	if fn[s] == nil {
+		fn[s] = make(Step)
+	}
+	return fn[s]
+}
+
+func (step Step) states(input Symbol) *StateSet {
+	if step[input] == nil {
+		step[input] = NewStateSet()
+	}
+	return step[input]
+}
+
+func (step Step) add(input Symbol, newStates *StateSet) {
+	step[input] = step.states(input).Concat(newStates)
+}
 
 // an initial (or start) state q0 ∈ Q
 // a set of states F distinguished as accepting (or final) states F ⊆ Q.
@@ -87,10 +106,7 @@ func NewNFA(startState State, finalStates *StateSet) *NFA {
 }
 
 func (nfa *NFA) Add(oldState State, input Symbol, newStates *StateSet) {
-	if nfa.transitions[oldState] == nil {
-		nfa.transitions[oldState] = make(map[Symbol]*StateSet)
-	}
-	nfa.transitions[oldState][input] = newStates
+	nfa.transitions.get(oldState).add(input, newStates)
 }
 
 func (nfa *NFA) Compile() *DFA {
@@ -104,17 +120,9 @@ func (nfa *NFA) Compile() *DFA {
 
 func powerSetConstruction(nfa *NFA, dfa *DFA, ss *StateSet) {
 	for _, s := range ss.States() {
-		for input, newStates := range nfa.transitions[s] {
+		for input, newStates := range nfa.transitions.get(s) {
 			dfaState := State(newStates.String())
-			if dfa.transitions[dfaState] == nil {
-				dfa.transitions[dfaState] = make(map[Symbol]*StateSet)
-			}
-			existingNewStates := dfa.transitions[dfaState][input]
-			if existingNewStates == nil {
-				dfa.transitions[dfaState][input] = newStates
-			} else {
-				dfa.transitions[dfaState][input] = existingNewStates.Concat(newStates)
-			}
+			dfa.transitions.get(dfaState).add(input, newStates)
 		}
 	}
 }

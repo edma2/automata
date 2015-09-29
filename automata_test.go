@@ -29,6 +29,21 @@ func TestStateSet(t *testing.T) {
 	}
 }
 
+func TestTransitionFunc(t *testing.T) {
+	fn := make(TransitionFunc)
+	var actual string
+
+	actual = fn.get("a").states('1').String()
+	if actual != "{}" {
+		t.Errorf("get() and states() should return defaults, actual: %s, expected: {}", actual)
+	}
+	fn.get("a").add('1', NewStateSet("b", "c"))
+	actual = fn.get("a").states('1').String()
+	if actual != "{b,c}" {
+		t.Errorf("add() should persist values, actual: %s, expected: {b,c}", actual)
+	}
+}
+
 func TestChessboard(t *testing.T) {
 	nfa := NewNFA("1", NewStateSet("9"))
 
