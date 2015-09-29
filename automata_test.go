@@ -1,6 +1,9 @@
 package automata
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestStateSet(t *testing.T) {
 	emptyState := NewStateSet()
@@ -73,6 +76,7 @@ func TestChessboard(t *testing.T) {
 	nfa.Add("9", 'b', NewStateSet("5"))
 
 	dfa := nfa.Compile()
+	fmt.Println(dfa)
 	if ok := dfa.Execute("rbb"); !ok {
 		t.Error("rbb must be accepted")
 	}

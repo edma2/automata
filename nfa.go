@@ -119,12 +119,26 @@ func (nfa *NFA) Compile() *DFA {
 }
 
 func powerSetConstruction(nfa *NFA, dfa *DFA, ss *StateSet) {
+	dfaState := State(ss.String())
 	for _, s := range ss.States() {
 		for input, newStates := range nfa.transitions.get(s) {
-			dfaState := State(newStates.String())
 			dfa.transitions.get(dfaState).add(input, newStates)
 		}
 	}
+}
+
+func (fn TransitionFunc) String() string {
+	var lines []string
+	for state, step := range fn {
+		for input, newStates := range step {
+			lines = append(lines, fmt.Sprintf("%s	%c	%s", state, input, newStates))
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
+func (dfa *DFA) String() string {
+	return dfa.transitions.String()
 }
 
 func (dfa *DFA) Execute(input string) bool {
