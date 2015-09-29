@@ -29,11 +29,11 @@ type Symbol rune
 type NFA struct {
 	transitions map[State]map[Symbol]*StateSet
 	startState  State
-	finalStates StateSet
+	finalStates *StateSet
 }
 
 // Create a new StateSet - silently ignore duplicates
-func NewStateSet(states []State) *StateSet {
+func NewStateSet(states ...State) *StateSet {
 	ss := new(StateSet)
 	ss.states = make(map[State]bool)
 	for _, s := range states {
@@ -66,5 +66,16 @@ func (ss *StateSet) Concat(other *StateSet) *StateSet {
 		states[i] = s
 		i = i + 1
 	}
-	return NewStateSet(states)
+	return NewStateSet(states...)
+}
+
+func NewNFA(startState State, finalStates *StateSet) *NFA {
+	return &NFA{startState: startState, finalStates: finalStates}
+}
+
+func (nfa *NFA) Add(oldState State, input Symbol, newStates *StateSet) {
+	if nfa.transitions[oldState] == nil {
+		nfa.transitions[oldState] = make(map[Symbol]*StateSet)
+	}
+	nfa.transitions[oldState][input] = newStates
 }
