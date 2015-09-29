@@ -7,9 +7,9 @@ import (
 	"strings"
 )
 
-// States are represented by Go runes.
-// Each rune is an integer value identifying a Unicode code point.
-type State rune
+// A State in the automaton is identified by a string.
+// Usually they are human-readable UTF-8 encoded strings.
+type State string
 
 // A set of States
 type StateSet struct {
