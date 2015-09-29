@@ -70,7 +70,10 @@ func (ss *StateSet) Concat(other *StateSet) *StateSet {
 }
 
 func NewNFA(startState State, finalStates *StateSet) *NFA {
-	return &NFA{startState: startState, finalStates: finalStates}
+	return &NFA{
+		startState:  startState,
+		finalStates: finalStates,
+		transitions: make(map[State]map[Symbol]*StateSet)}
 }
 
 func (nfa *NFA) Add(oldState State, input Symbol, newStates *StateSet) {
