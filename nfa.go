@@ -43,7 +43,7 @@ func (ss *StateSet) String() string {
 }
 
 // Combine two StateSets, returning a new StateSet
-func (ss *StateSet) Combine(other *StateSet) *StateSet {
+func (ss *StateSet) Concat(other *StateSet) *StateSet {
 	states := make([]State, len(ss.states)+len(other.states))
 	i := 0
 	for s, _ := range ss.states {

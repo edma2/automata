@@ -32,10 +32,10 @@ func TestStateSet(t *testing.T) {
 
 	combined := NewStateSet([]State{})
 	for _, ss := range stateSets {
-		combined = combined.Combine(ss)
+		combined = combined.Concat(ss)
 	}
 	if combined.String() != "{a,b,c,d}" {
-		t.Errorf("Combine() expected: {a,b,c,d}, actual: %s", combined.String())
+		t.Errorf("Concat() expected: {a,b,c,d}, actual: %s", combined.String())
 	}
 }
 
