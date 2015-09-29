@@ -16,6 +16,9 @@ type StateSet struct {
 	states map[State]bool
 }
 
+// An input symbol
+type Symbol rune
+
 // A NFA-ε is represented formally by a 5-tuple, (Q, Σ, Δ, q0, F), consisting of
 //
 // a finite set of states Q
@@ -24,6 +27,9 @@ type StateSet struct {
 // an initial (or start) state q0 ∈ Q
 // a set of states F distinguished as accepting (or final) states F ⊆ Q.
 type NFA struct {
+	transitions map[State]map[Symbol]*StateSet
+	startState  State
+	finalStates StateSet
 }
 
 // Create a new StateSet - silently ignore duplicates
