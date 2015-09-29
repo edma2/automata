@@ -7,10 +7,6 @@ import (
 	"strings"
 )
 
-// A NFA-ε is represented formally by a 5-tuple, (Q, Σ, Δ, q0, F), consisting of
-//
-// a finite set of states Q
-
 // States are represented by Go runes.
 // Each rune is an integer value identifying a Unicode code point.
 type State rune
@@ -18,6 +14,16 @@ type State rune
 // A set of States
 type StateSet struct {
 	states map[State]bool
+}
+
+// A NFA-ε is represented formally by a 5-tuple, (Q, Σ, Δ, q0, F), consisting of
+//
+// a finite set of states Q
+// a finite set of input symbols Σ
+// a transition function Δ : Q × (Σ ∪ {ε}) → P(Q)
+// an initial (or start) state q0 ∈ Q
+// a set of states F distinguished as accepting (or final) states F ⊆ Q.
+type NFA struct {
 }
 
 // Create a new StateSet - silently ignore duplicates
