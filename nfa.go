@@ -56,7 +56,7 @@ type NFA struct {
 
 type DFA struct {
 	transitions TransitionFunc
-	startStates *StateSet
+	startState  State
 	finalStates *StateSet
 }
 
@@ -92,6 +92,16 @@ func (ss *StateSet) String() string {
 	return fmt.Sprintf("{%s}", strings.Join(a, ","))
 }
 
+// Return true if this StateSet contains at least one state also in other.
+func (ss *StateSet) ContainsAny(other *StateSet) bool {
+	for s, _ := range other.states {
+		if ss.states[s] {
+			return true
+		}
+	}
+	return false
+}
+
 // Combine two StateSets, returning a new StateSet
 func (ss *StateSet) Concat(other *StateSet) *StateSet {
 	states := append(ss.States(), other.States()...)
@@ -112,33 +122,54 @@ func (nfa *NFA) Add(oldState State, input Symbol, newStates *StateSet) {
 func (nfa *NFA) Compile() *DFA {
 	dfa := new(DFA)
 	dfa.transitions = make(TransitionFunc)
-	dfa.startStates = NewStateSet(nfa.startState)
-	powerSetConstruction(nfa, dfa, dfa.startStates)
+	dfa.finalStates = NewStateSet()
+	powerSetConstruction(nfa, dfa, nil)
 	// TODO: compute DFA final states
 	return dfa
 }
 
 func powerSetConstruction(nfa *NFA, dfa *DFA, ss *StateSet) {
+	// if nil, then we're starting from start state
+	if ss == nil {
+		startStateSet := NewStateSet(nfa.startState)
+		dfa.startState = State(startStateSet.String())
+		powerSetConstruction(nfa, dfa, startStateSet)
+		return
+	}
 	dfaState := State(ss.String())
+	if dfa.transitions[dfaState] != nil {
+		return
+	}
+	if ss.ContainsAny(nfa.finalStates) {
+		dfa.finalStates = dfa.finalStates.Concat(NewStateSet(dfaState))
+	}
+	unionStep := make(Step)
 	for _, s := range ss.States() {
 		for input, newStates := range nfa.transitions.get(s) {
-			dfa.transitions.get(dfaState).add(input, newStates)
+			unionStep.add(input, newStates)
 		}
 	}
-}
-
-func (fn TransitionFunc) String() string {
-	var lines []string
-	for state, step := range fn {
-		for input, newStates := range step {
-			lines = append(lines, fmt.Sprintf("%s	%c	%s", state, input, newStates))
-		}
+	dfa.transitions[dfaState] = unionStep
+	for _, newStates := range unionStep {
+		powerSetConstruction(nfa, dfa, newStates)
 	}
-	return strings.Join(lines, "\n")
 }
 
 func (dfa *DFA) String() string {
-	return dfa.transitions.String()
+	var lines []string
+	for state, step := range dfa.transitions {
+		for input, newStates := range step {
+			special := ""
+			if dfa.finalStates.states[state] {
+				special = special + "*"
+			}
+			if dfa.startState == state {
+				special = special + ">"
+			}
+			lines = append(lines, fmt.Sprintf("%s %s	%c	%s", special, state, input, newStates))
+		}
+	}
+	return strings.Join(lines, "\n")
 }
 
 func (dfa *DFA) Execute(input string) bool {
