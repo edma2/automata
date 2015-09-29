@@ -171,5 +171,10 @@ func (dfa *DFA) String() string {
 }
 
 func (dfa *DFA) Execute(input string) bool {
-	return false
+	state := dfa.startState
+	for _, runeValue := range input {
+		newStates := dfa.transitions[state][Symbol(runeValue)]
+		state = State(newStates.String())
+	}
+	return dfa.finalStates.states[state]
 }
