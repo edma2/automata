@@ -10,72 +10,49 @@ import (
 // A NFA-ε is represented formally by a 5-tuple, (Q, Σ, Δ, q0, F), consisting of
 //
 // a finite set of states Q
-type State string
 
-// a finite set of input symbols Σ
-type Symbol rune
+// States are represented by Go runes.
+// Each rune is an integer value identifying a Unicode code point.
+type State rune
 
-// a transition function Δ : Q × (Σ ∪ {ε}) → P(Q)
-type Transition map[Symbol][]State
-type TransitionFunc map[State]Transition
-
-// TODO: ε-transitions
-
-// an initial (or start) state q0 ∈ Q
-// a set of states F distinguished as accepting (or final) states F ⊆ Q.
-type NFA struct {
-	q0    State
-	final map[State]bool
-	delta TransitionFunc
+// A set of States
+type StateSet struct {
+	states map[State]bool
 }
 
-func NewNFA(q0 State, final []State) *NFA {
-	nfa := NFA{q0: q0, delta: make(TransitionFunc)}
-	nfa.final = make(map[State]bool)
-	for i := 0; i < len(final); i++ {
-		nfa.final[final[i]] = true
+// Create a new StateSet - silently ignore duplicates
+func NewStateSet(states []State) *StateSet {
+	ss := new(StateSet)
+	ss.states = make(map[State]bool)
+	for _, s := range states {
+		ss.states[s] = true
 	}
-	return &nfa
+	return ss
 }
 
-func (nfa *NFA) NewTransition(q State, input Symbol, qs []State) {
-	transition := nfa.delta[q]
-	if transition == nil {
-		transition = make(Transition)
-		nfa.delta[q] = transition
+// Display a StateSet as a string (e.g. "{1,4,6}")
+func (ss *StateSet) String() string {
+	a := make([]string, len(ss.states))
+	i := 0
+	for s, _ := range ss.states {
+		a[i] = string(s)
+		i = i + 1
 	}
-	transition[input] = qs
+	sort.Strings(a)
+	return fmt.Sprintf("{%s}", strings.Join(a, ","))
 }
 
-// Return a copy of sorted slice without duplicate strings.
-func uniq(a []string) []string {
-	newa := make([]string, len(a))
-	i := -1
-	for _, s := range a {
-		if i < 0 || newa[i] != s {
-			i = i + 1
-			newa[i] = s
-		}
+// Combine two StateSets, returning a new StateSet
+func (ss *StateSet) Combine(other *StateSet) *StateSet {
+	states := make([]State, len(ss.states)+len(other.states))
+	i := 0
+	for s, _ := range ss.states {
+		states[i] = s
+		i = i + 1
 	}
-	if i < 0 {
-		return []string{}
-	} else {
-		return newa[0 : i+1]
+	for s, _ := range other.states {
+		states[i] = s
+		i = i + 1
 	}
-}
-
-func foldStates(qs []State) State {
-	qss := make([]string, len(qs))
-	for i := 0; i < len(qs); i++ {
-		qss[i] = string(qs[i])
-	}
-	sort.Strings(qss)
-	return State(fmt.Sprintf("{%s}", strings.Join(uniq(qss), ",")))
-}
-
-// Compile this NFA to an executable DFA.
-func (nfa *NFA) Compile() *DFA {
-	dfa := DFA{}
-	dfa.q0 = foldStates([]State{nfa.q0})
-	return &dfa
+	return NewStateSet(states)
 }
