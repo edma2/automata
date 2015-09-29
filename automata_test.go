@@ -42,6 +42,11 @@ func TestTransitionFunc(t *testing.T) {
 	if actual != "{b,c}" {
 		t.Errorf("add() should persist values, actual: %s, expected: {b,c}", actual)
 	}
+	fn.get("a").add('1', NewStateSet("d"))
+	actual = fn.get("a").states('1').String()
+	if actual != "{b,c,d}" {
+		t.Errorf("add() should persist values, actual: %s, expected: {b,c,d}", actual)
+	}
 }
 
 func TestChessboard(t *testing.T) {
