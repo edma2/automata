@@ -139,7 +139,7 @@ func powerSetConstruction(nfa *NFA, dfa *DFA, ss *StateSet) {
 		return
 	}
 	if ss.ContainsAny(nfa.finalStates) {
-		dfa.finalStates = dfa.finalStates.Concat(NewStateSet(dfaState))
+		dfa.finalStates.states[dfaState] = true
 	}
 	unionStep := make(Step)
 	for _, s := range ss.States() {
