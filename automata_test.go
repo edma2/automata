@@ -52,8 +52,8 @@ func TestChessboard(t *testing.T) {
 	nfa.Add("8", 'b', NewStateSet("5", "7", "9"))
 	nfa.Add("9", 'b', NewStateSet("5"))
 
-// 	dfa := nfa.Compile()
-// 	if ok := dfa.Execute("rbb"); !ok {
-// 		t.Error("rbb must be accepted")
-// 	}
+	// 	dfa := nfa.Compile()
+	// 	if ok := dfa.Execute("rbb"); !ok {
+	// 		t.Error("rbb must be accepted")
+	// 	}
 }
