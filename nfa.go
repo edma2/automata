@@ -79,6 +79,10 @@ func (ss *StateSet) States() []State {
 	return a
 }
 
+func (ss *StateSet) Contains(s State) bool {
+	return ss.states[s]
+}
+
 // Display a StateSet as a string (e.g. "{1,4,6}")
 func (ss *StateSet) String() string {
 	states := ss.States()
@@ -93,7 +97,7 @@ func (ss *StateSet) String() string {
 // Return true if this StateSet contains at least one state also in other.
 func (ss *StateSet) ContainsAny(other *StateSet) bool {
 	for s, _ := range other.states {
-		if ss.states[s] {
+		if ss.Contains(s) {
 			return true
 		}
 	}
@@ -158,7 +162,7 @@ func (dfa *DFA) String() string {
 	for state, step := range dfa.transitions {
 		for input, newStates := range step {
 			special := ""
-			if dfa.finalStates.states[state] {
+			if dfa.finalStates.Contains(state) {
 				special = special + "*"
 			}
 			if dfa.startState == state {
@@ -176,5 +180,5 @@ func (dfa *DFA) Execute(input string) bool {
 		newStates := dfa.transitions[state][Symbol(runeValue)]
 		state = State(newStates.String())
 	}
-	return dfa.finalStates.states[state]
+	return dfa.finalStates.Contains(state)
 }
