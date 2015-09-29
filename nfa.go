@@ -32,6 +32,12 @@ type NFA struct {
 	finalStates *StateSet
 }
 
+type DFA struct {
+	transitions map[State]map[Symbol]State
+	startState  State
+	finalStates *StateSet
+}
+
 // Create a new StateSet - silently ignore duplicates
 func NewStateSet(states ...State) *StateSet {
 	ss := new(StateSet)
@@ -81,4 +87,12 @@ func (nfa *NFA) Add(oldState State, input Symbol, newStates *StateSet) {
 		nfa.transitions[oldState] = make(map[Symbol]*StateSet)
 	}
 	nfa.transitions[oldState][input] = newStates
+}
+
+func (nfa *NFA) Compile() *DFA {
+	return new(DFA)
+}
+
+func (dfa *DFA) Execute(input string) bool {
+	return false
 }
