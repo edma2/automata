@@ -3,36 +3,26 @@ package automata
 import "testing"
 
 func TestStateSet(t *testing.T) {
+	emptyState := NewStateSet([]State{})
 	var tests = []struct {
-		input    string
+		stateSet *StateSet
 		expected string
 	}{
-		{"abbc", "{a,b,c}"},
-		{"dddd", "{d}"},
-		{"bca", "{a,b,c}"},
-		{"", "{}"},
+		{NewStateSet([]State{"a", "b", "b", "c"}), "{a,b,c}"},
+		{NewStateSet([]State{"d", "d", "d", "d"}), "{d}"},
+		{NewStateSet([]State{"b", "c", "a"}), "{a,b,c}"},
+		{emptyState, "{}"},
 	}
 
-	stateSets := make([]*StateSet, len(tests))
-
-	for i, test := range tests {
-		states := make([]State, len(test.input))
-		for i, runeValue := range test.input {
-			states[i] = State(runeValue)
-		}
-		stateSets[i] = NewStateSet(states)
-	}
-
-	for i, ss := range stateSets {
-		test := tests[i]
-		if actual := ss.String(); actual != test.expected {
-			t.Errorf("input: %s, actual: %s, expected: %s", test.input, actual, test.expected)
+	for _, test := range tests {
+		if actual := test.stateSet.String(); actual != test.expected {
+			t.Errorf("input: %s, actual: %s, expected: %s", test.stateSet, actual, test.expected)
 		}
 	}
 
-	combined := NewStateSet([]State{})
-	for _, ss := range stateSets {
-		combined = combined.Concat(ss)
+	combined := emptyState
+	for _, test := range tests {
+		combined = combined.Concat(test.stateSet)
 	}
 	if combined.String() != "{a,b,c,d}" {
 		t.Errorf("Concat() expected: {a,b,c,d}, actual: %s", combined.String())
