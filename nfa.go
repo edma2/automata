@@ -55,9 +55,7 @@ type NFA struct {
 }
 
 type DFA struct {
-	transitions TransitionFunc
-	startState  State
-	finalStates *StateSet
+	NFA
 }
 
 // Create a new StateSet - silently ignore duplicates
