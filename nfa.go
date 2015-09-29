@@ -1,4 +1,5 @@
 // Nondeterministic finite automatons (with ε-transitions)
+// TODO: be more consistent with variable names (e.g. s vs state)
 package automata
 
 import (
@@ -25,8 +26,8 @@ type Symbol rune
 // a finite set of input symbols Σ
 // a transition function Δ : Q × (Σ ∪ {ε}) → P(Q)
 
-type Step map[Symbol]*StateSet
-type TransitionFunc map[State]Step
+type Step map[Symbol]*StateSet // TODO: rename to "Row" ?
+type TransitionFunc map[State]Step // TODO: rename to "TransitionTable"?
 
 func (fn TransitionFunc) get(s State) Step {
 	if fn[s] == nil {
@@ -42,6 +43,7 @@ func (step Step) states(input Symbol) *StateSet {
 	return step[input]
 }
 
+// TODO: move to StateSet?
 func (step Step) add(input Symbol, newStates *StateSet) {
 	step[input] = step.states(input).Concat(newStates)
 }
@@ -134,7 +136,7 @@ func powerSetConstruction(nfa *NFA, dfa *DFA, ss *StateSet) {
 	// if nil, then we're starting from start state
 	if ss == nil {
 		startStateSet := NewStateSet(nfa.startState)
-		dfa.startState = State(startStateSet.String())
+		dfa.startState = State(startStateSet.String()) // TODO: stateSet.FoldState()?
 		powerSetConstruction(nfa, dfa, startStateSet)
 		return
 	}
