@@ -135,8 +135,7 @@ func (nfa *NFA) Compile() *DFA {
 	dfa := new(DFA)
 	dfa.transitions = make(TransitionTable)
 	dfa.finalStates = NewStateSet()
-	startState := NewStateSet(nfa.startState)
-	powersetConstruction(nfa, dfa, startState)
+	powersetConstruction(nfa, dfa, NewStateSet(nfa.startState))
 	return dfa
 }
 
