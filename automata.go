@@ -183,8 +183,8 @@ func (dfa *DFA) String() string {
 func (dfa *DFA) Execute(input string) bool {
 	state := dfa.startState
 	for _, runeValue := range input {
-		newStates := dfa.transitions[state][Symbol(runeValue)]
-		state = newStates.Fold()
+		input := Symbol(runeValue)
+		state = dfa.transitions.Row(state).Column(input).Fold()
 	}
 	return dfa.finalStates.Contains(state)
 }
