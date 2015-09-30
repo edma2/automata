@@ -52,7 +52,7 @@ func TestTransitionTable(t *testing.T) {
 	}
 }
 
-func TestChestateSetboard(t *testing.T) {
+func TestChessboard(t *testing.T) {
 	nfa := NewNFA("1", NewStateSet("9"))
 
 	nfa.Add("1", 'r', NewStateSet("2", "4"))
