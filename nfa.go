@@ -81,11 +81,11 @@ type Symbol rune
 type Row map[Symbol]*StateSet
 type TransitionTable map[State]Row
 
-func (fn TransitionTable) get(state State) Row {
-	if fn[state] == nil {
-		fn[state] = make(Row)
+func (table TransitionTable) get(state State) Row {
+	if table[state] == nil {
+		table[state] = make(Row)
 	}
-	return fn[state]
+	return table[state]
 }
 
 func (row Row) states(input Symbol) *StateSet {
