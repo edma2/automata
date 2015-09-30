@@ -16,77 +16,34 @@ type StateSet struct {
 	states map[State]bool
 }
 
-// An input symbol
-type Symbol rune
-
-// A NFA-ε is represented formally by a 5-tuple, (Q, Σ, Δ, q0, F), consisting of
-//
-// a finite set of states Q
-// a finite set of input symbols Σ
-// a transition function Δ : Q × (Σ ∪ {ε}) → P(Q)
-
-type Step map[Symbol]*StateSet     // TODO: rename to "Row" ?
-type TransitionFunc map[State]Step // TODO: rename to "TransitionTable"?
-
-func (fn TransitionFunc) get(state State) Step {
-	if fn[state] == nil {
-		fn[state] = make(Step)
-	}
-	return fn[state]
-}
-
-func (step Step) states(input Symbol) *StateSet {
-	if step[input] == nil {
-		step[input] = NewStateSet()
-	}
-	return step[input]
-}
-
-// TODO: move to StateSet?
-func (step Step) add(input Symbol, newStates *StateSet) {
-	step[input] = step.states(input).Concat(newStates)
-}
-
-// an initial (or start) state q0 ∈ Q
-// a set of states F distinguished as accepting (or final) states F ⊆ Q.
-type NFA struct {
-	transitions TransitionFunc
-	startState  State
-	finalStates *StateSet
-}
-
-type DFA struct {
-	NFA
-}
-
 // Create a new StateSet - silently ignore duplicates
 func NewStateSet(states ...State) *StateSet {
-	ss := new(StateSet)
-	ss.states = make(map[State]bool)
+	stateSet := new(StateSet)
+	stateSet.states = make(map[State]bool)
 	for _, state := range states {
-		ss.states[state] = true
+		stateSet.states[state] = true
 	}
-	return ss
+	return stateSet
 }
 
 // Return states as an array (in no particular order)
-func (ss *StateSet) States() []State {
-	a := make([]State, len(ss.states))
+func (stateSet *StateSet) States() []State {
+	a := make([]State, len(stateSet.states))
 	i := 0
-	for state, _ := range ss.states {
+	for state, _ := range stateSet.states {
 		a[i] = state
 		i = i + 1
 	}
 	return a
 }
 
-func (ss *StateSet) Contains(state State) bool {
-	return ss.states[state]
+func (stateSet *StateSet) Contains(state State) bool {
+	return stateSet.states[state]
 }
 
 // Display a StateSet as a string (e.g. "{1,4,6}")
-func (ss *StateSet) String() string {
-	states := ss.States()
+func (stateSet *StateSet) String() string {
+	states := stateSet.States()
 	a := make([]string, len(states))
 	for i, state := range states {
 		a[i] = string(state)
@@ -96,9 +53,9 @@ func (ss *StateSet) String() string {
 }
 
 // Return true if this StateSet contains at least one state also in other.
-func (ss *StateSet) ContainsAny(other *StateSet) bool {
+func (stateSet *StateSet) ContainsAny(other *StateSet) bool {
 	for state, _ := range other.states {
-		if ss.Contains(state) {
+		if stateSet.Contains(state) {
 			return true
 		}
 	}
@@ -106,16 +63,59 @@ func (ss *StateSet) ContainsAny(other *StateSet) bool {
 }
 
 // Combine two StateSets, returning a new StateSet
-func (ss *StateSet) Concat(other *StateSet) *StateSet {
-	states := append(ss.States(), other.States()...)
+func (stateSet *StateSet) Concat(other *StateSet) *StateSet {
+	states := append(stateSet.States(), other.States()...)
 	return NewStateSet(states...)
+}
+
+// An input symbol
+type Symbol rune
+
+// A NFA-ε is represented formally by a 5-tuple, (Q, Σ, Δ, q0, F), consisting of
+//
+// a finite set of states Q
+// a finite set of input symbols Σ
+// a transition function Δ : Q × (Σ ∪ {ε}) → P(Q)
+
+type Row map[Symbol]*StateSet
+type TransitionTable map[State]Row
+
+func (fn TransitionTable) get(state State) Row {
+	if fn[state] == nil {
+		fn[state] = make(Row)
+	}
+	return fn[state]
+}
+
+func (row Row) states(input Symbol) *StateSet {
+	if row[input] == nil {
+		row[input] = NewStateSet()
+	}
+	return row[input]
+}
+
+// TODO: move to StateSet?
+func (row Row) add(input Symbol, newStates *StateSet) {
+	row[input] = row.states(input).Concat(newStates)
+}
+
+// an initial (or start) state q0 ∈ Q
+// a set of states F distinguished as accepting (or final) states F ⊆ Q.
+type NFA struct {
+	transitions TransitionTable
+	startState  State
+	finalStates *StateSet
+}
+
+type DFA struct {
+	NFA
 }
 
 func NewNFA(startState State, finalStates *StateSet) *NFA {
 	return &NFA{
 		startState:  startState,
 		finalStates: finalStates,
-		transitions: make(TransitionFunc)}
+		transitions: make(TransitionTable)}
 }
 
 func (nfa *NFA) Add(oldState State, input Symbol, newStates *StateSet) {
@@ -124,44 +124,44 @@ func (nfa *NFA) Add(oldState State, input Symbol, newStates *StateSet) {
 
 func (nfa *NFA) Compile() *DFA {
 	dfa := new(DFA)
-	dfa.transitions = make(TransitionFunc)
+	dfa.transitions = make(TransitionTable)
 	dfa.finalStates = NewStateSet()
 	powerSetConstruction(nfa, dfa, nil)
 	// TODO: compute DFA final states
 	return dfa
 }
 
-func powerSetConstruction(nfa *NFA, dfa *DFA, ss *StateSet) {
+func powerSetConstruction(nfa *NFA, dfa *DFA, stateSet *StateSet) {
 	// if nil, then we're starting from start state
-	if ss == nil {
+	if stateSet == nil {
 		startStateSet := NewStateSet(nfa.startState)
 		dfa.startState = State(startStateSet.String()) // TODO: stateSet.FoldState()?
 		powerSetConstruction(nfa, dfa, startStateSet)
 		return
 	}
-	dfaState := State(ss.String())
+	dfaState := State(stateSet.String())
 	if dfa.transitions[dfaState] != nil {
 		return
 	}
-	if ss.ContainsAny(nfa.finalStates) {
+	if stateSet.ContainsAny(nfa.finalStates) {
 		dfa.finalStates.states[dfaState] = true
 	}
-	unionStep := make(Step)
-	for _, state := range ss.States() {
+	unionRow := make(Row)
+	for _, state := range stateSet.States() {
 		for input, newStates := range nfa.transitions.get(state) {
-			unionStep.add(input, newStates)
+			unionRow.add(input, newStates)
 		}
 	}
-	dfa.transitions[dfaState] = unionStep
-	for _, newStates := range unionStep {
+	dfa.transitions[dfaState] = unionRow
+	for _, newStates := range unionRow {
 		powerSetConstruction(nfa, dfa, newStates)
 	}
 }
 
 func (dfa *DFA) String() string {
 	var lines []string
-	for state, step := range dfa.transitions {
-		for input, newStates := range step {
+	for state, row := range dfa.transitions {
+		for input, newStates := range row {
 			special := ""
 			if dfa.finalStates.Contains(state) {
 				special = special + "*"
