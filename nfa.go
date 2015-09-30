@@ -38,6 +38,10 @@ func (stateSet *StateSet) States() []State {
 	return a
 }
 
+func (stateSet *StateSet) Fold() State {
+	return State(stateSet.String())
+}
+
 // Returns true if this state set contains state.
 func (stateSet *StateSet) Contains(state State) bool {
 	return stateSet.states[state]
@@ -65,9 +69,13 @@ func (stateSet *StateSet) ContainsAny(other *StateSet) bool {
 	return false
 }
 
-// Adds another state set's states to this one.
-func (stateSet *StateSet) Add(other *StateSet) {
-	for _, state := range other.States() {
+// Includes another state set's states to this one.
+func (stateSet *StateSet) Include(other *StateSet) {
+	stateSet.Add(other.States()...)
+}
+
+func (stateSet *StateSet) Add(states ...State) {
+	for _, state := range states {
 		stateSet.states[state] = true
 	}
 }
@@ -119,7 +127,7 @@ func NewNFA(startState State, finalStates *StateSet) *NFA {
 
 // Adds a new transition to this NFA.
 func (nfa *NFA) Add(oldState State, input Symbol, newStates *StateSet) {
-	nfa.transitions.Row(oldState).Column(input).Add(newStates)
+	nfa.transitions.Row(oldState).Column(input).Include(newStates)
 }
 
 // Compiles this NFA to a DFA.
@@ -127,34 +135,31 @@ func (nfa *NFA) Compile() *DFA {
 	dfa := new(DFA)
 	dfa.transitions = make(TransitionTable)
 	dfa.finalStates = NewStateSet()
-	powersetConstruction(nfa, dfa, nil)
+	startState := NewStateSet(nfa.startState)
+	powersetConstruction(nfa, dfa, startState)
 	return dfa
 }
 
 // Implements the powerset construction algorithm.
 func powersetConstruction(nfa *NFA, dfa *DFA, stateSet *StateSet) {
-	// if nil, then we're starting from start state
-	if stateSet == nil {
-		startStateSet := NewStateSet(nfa.startState)
-		dfa.startState = State(startStateSet.String()) // TODO: stateSet.FoldState()?
-		powersetConstruction(nfa, dfa, startStateSet)
-		return
-	}
-	dfaState := State(stateSet.String())
+	dfaState := stateSet.Fold()
 	if dfa.transitions[dfaState] != nil {
 		return
 	}
 	if stateSet.ContainsAny(nfa.finalStates) {
-		dfa.finalStates.states[dfaState] = true
+		dfa.finalStates.Add(dfaState)
 	}
-	unionRow := make(Row)
+	if dfa.startState == "" {
+		dfa.startState = dfaState
+	}
+	union := make(Row)
 	for _, state := range stateSet.States() {
 		for input, newStates := range nfa.transitions.Row(state) {
-			unionRow.Column(input).Add(newStates)
+			union.Column(input).Include(newStates)
 		}
 	}
-	dfa.transitions[dfaState] = unionRow
-	for _, newStates := range unionRow {
+	dfa.transitions[dfaState] = union
+	for _, newStates := range union {
 		powersetConstruction(nfa, dfa, newStates)
 	}
 }
@@ -170,7 +175,7 @@ func (dfa *DFA) String() string {
 			if dfa.startState == state {
 				special = special + ">"
 			}
-			lines = append(lines, fmt.Sprintf("%s %s	%c	%s", special, state, input, newStates))
+			lines = append(lines, fmt.Sprintf("%s		%s		%c	%s", special, state, input, newStates))
 		}
 	}
 	return strings.Join(lines, "\n")
@@ -180,7 +185,7 @@ func (dfa *DFA) Execute(input string) bool {
 	state := dfa.startState
 	for _, runeValue := range input {
 		newStates := dfa.transitions[state][Symbol(runeValue)]
-		state = State(newStates.String())
+		state = newStates.Fold()
 	}
 	return dfa.finalStates.Contains(state)
 }
