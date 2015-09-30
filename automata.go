@@ -114,7 +114,9 @@ type NFA struct {
 }
 
 type DFA struct {
-	NFA
+	transitions map[State]map[Symbol]State
+	startState  State
+	finalStates *StateSet
 }
 
 // Returns a new NFA with given start state and final states.
@@ -130,10 +132,18 @@ func (nfa *NFA) Add(oldState State, input Symbol, newStates *StateSet) {
 	nfa.transitions.Row(oldState).Column(input).Include(newStates)
 }
 
+// Adds a new transition to this DFA.
+func (dfa *DFA) Add(oldState State, input Symbol, newState State) {
+	if dfa.transitions[oldState] == nil {
+		dfa.transitions[oldState] = make(map[Symbol]State)
+	}
+	dfa.transitions[oldState][input] = newState
+}
+
 // Compiles this NFA to a DFA.
 func (nfa *NFA) Compile() *DFA {
 	dfa := new(DFA)
-	dfa.transitions = make(TransitionTable)
+	dfa.transitions = make(map[State]map[Symbol]State)
 	dfa.finalStates = NewStateSet()
 	powersetConstruction(nfa, dfa, NewStateSet(nfa.startState))
 	return dfa
@@ -157,7 +167,9 @@ func powersetConstruction(nfa *NFA, dfa *DFA, stateSet *StateSet) {
 			union.Column(input).Include(newStates)
 		}
 	}
-	dfa.transitions[dfaState] = union
+	for input, newStates := range union {
+		dfa.Add(dfaState, input, newStates.Fold())
+	}
 	for _, newStates := range union {
 		powersetConstruction(nfa, dfa, newStates)
 	}
@@ -183,8 +195,7 @@ func (dfa *DFA) String() string {
 func (dfa *DFA) Execute(input string) bool {
 	state := dfa.startState
 	for _, runeValue := range input {
-		input := Symbol(runeValue)
-		state = dfa.transitions.Row(state).Column(input).Fold()
+		state = dfa.transitions[state][Symbol(runeValue)]
 	}
 	return dfa.finalStates.Contains(state)
 }
