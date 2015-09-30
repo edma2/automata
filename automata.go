@@ -133,7 +133,7 @@ func (nfa *NFA) Add(oldState State, input Symbol, newStates *StateSet) {
 }
 
 // Adds a new transition to this DFA.
-func (dfa *DFA) Add(oldState State, input Symbol, newState State) {
+func (dfa *DFA) add(oldState State, input Symbol, newState State) {
 	if dfa.transitions[oldState] == nil {
 		dfa.transitions[oldState] = make(map[Symbol]State)
 	}
@@ -168,7 +168,7 @@ func powersetConstruction(nfa *NFA, dfa *DFA, stateSet *StateSet) {
 		}
 	}
 	for input, newStates := range union {
-		dfa.Add(dfaState, input, newStates.Fold())
+		dfa.add(dfaState, input, newStates.Fold())
 	}
 	for _, newStates := range union {
 		powersetConstruction(nfa, dfa, newStates)
