@@ -10,8 +10,8 @@ import (
 // A state in the automaton is identified by a sequence of bytes.
 type State string
 
-// A set of States.
-// States in a StateSet are always unique.
+// A set of states.
+// States in a set are always unique.
 type StateSet struct {
 	states map[State]bool
 }
@@ -38,6 +38,7 @@ func (stateSet *StateSet) States() []State {
 	return a
 }
 
+// Fold this state set into a single state.
 func (stateSet *StateSet) Fold() State {
 	return State(stateSet.String())
 }
