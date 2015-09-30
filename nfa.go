@@ -7,11 +7,12 @@ import (
 	"strings"
 )
 
-// A State in the automaton is identified by a string.
-// Usually they are human-readable UTF-8 encoded strings.
+// A State in the automaton is identified by a human-readable UTF-8
+// encoded string.
 type State string
 
 // A set of States
+// States in a StateSet are always unique.
 type StateSet struct {
 	states map[State]bool
 }
