@@ -1,5 +1,4 @@
 // Nondeterministic finite automatons (with ε-transitions)
-// TODO: be more consistent with variable names (e.g. s vs state)
 package automata
 
 import (
@@ -26,14 +25,14 @@ type Symbol rune
 // a finite set of input symbols Σ
 // a transition function Δ : Q × (Σ ∪ {ε}) → P(Q)
 
-type Step map[Symbol]*StateSet // TODO: rename to "Row" ?
+type Step map[Symbol]*StateSet     // TODO: rename to "Row" ?
 type TransitionFunc map[State]Step // TODO: rename to "TransitionTable"?
 
-func (fn TransitionFunc) get(s State) Step {
-	if fn[s] == nil {
-		fn[s] = make(Step)
+func (fn TransitionFunc) get(state State) Step {
+	if fn[state] == nil {
+		fn[state] = make(Step)
 	}
-	return fn[s]
+	return fn[state]
 }
 
 func (step Step) states(input Symbol) *StateSet {
@@ -64,8 +63,8 @@ type DFA struct {
 func NewStateSet(states ...State) *StateSet {
 	ss := new(StateSet)
 	ss.states = make(map[State]bool)
-	for _, s := range states {
-		ss.states[s] = true
+	for _, state := range states {
+		ss.states[state] = true
 	}
 	return ss
 }
@@ -74,23 +73,23 @@ func NewStateSet(states ...State) *StateSet {
 func (ss *StateSet) States() []State {
 	a := make([]State, len(ss.states))
 	i := 0
-	for s, _ := range ss.states {
-		a[i] = s
+	for state, _ := range ss.states {
+		a[i] = state
 		i = i + 1
 	}
 	return a
 }
 
-func (ss *StateSet) Contains(s State) bool {
-	return ss.states[s]
+func (ss *StateSet) Contains(state State) bool {
+	return ss.states[state]
 }
 
 // Display a StateSet as a string (e.g. "{1,4,6}")
 func (ss *StateSet) String() string {
 	states := ss.States()
 	a := make([]string, len(states))
-	for i, s := range states {
-		a[i] = string(s)
+	for i, state := range states {
+		a[i] = string(state)
 	}
 	sort.Strings(a)
 	return fmt.Sprintf("{%s}", strings.Join(a, ","))
@@ -98,8 +97,8 @@ func (ss *StateSet) String() string {
 
 // Return true if this StateSet contains at least one state also in other.
 func (ss *StateSet) ContainsAny(other *StateSet) bool {
-	for s, _ := range other.states {
-		if ss.Contains(s) {
+	for state, _ := range other.states {
+		if ss.Contains(state) {
 			return true
 		}
 	}
@@ -148,8 +147,8 @@ func powerSetConstruction(nfa *NFA, dfa *DFA, ss *StateSet) {
 		dfa.finalStates.states[dfaState] = true
 	}
 	unionStep := make(Step)
-	for _, s := range ss.States() {
-		for input, newStates := range nfa.transitions.get(s) {
+	for _, state := range ss.States() {
+		for input, newStates := range nfa.transitions.get(state) {
 			unionStep.add(input, newStates)
 		}
 	}
