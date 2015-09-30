@@ -81,14 +81,14 @@ type Symbol rune
 type Row map[Symbol]*StateSet
 type TransitionTable map[State]Row
 
-func (table TransitionTable) get(state State) Row {
+func (table TransitionTable) Row(state State) Row {
 	if table[state] == nil {
 		table[state] = make(Row)
 	}
 	return table[state]
 }
 
-func (row Row) states(input Symbol) *StateSet {
+func (row Row) Column(input Symbol) *StateSet {
 	if row[input] == nil {
 		row[input] = NewStateSet()
 	}
@@ -97,7 +97,7 @@ func (row Row) states(input Symbol) *StateSet {
 
 // TODO: move to StateSet?
 func (row Row) add(input Symbol, newStates *StateSet) {
-	row[input] = row.states(input).Concat(newStates)
+	row[input] = row.Column(input).Concat(newStates)
 }
 
 // an initial (or start) state q0 ∈ Q
@@ -120,7 +120,7 @@ func NewNFA(startState State, finalStates *StateSet) *NFA {
 }
 
 func (nfa *NFA) Add(oldState State, input Symbol, newStates *StateSet) {
-	nfa.transitions.get(oldState).add(input, newStates)
+	nfa.transitions.Row(oldState).add(input, newStates)
 }
 
 func (nfa *NFA) Compile() *DFA {
@@ -149,7 +149,7 @@ func powerSetConstruction(nfa *NFA, dfa *DFA, stateSet *StateSet) {
 	}
 	unionRow := make(Row)
 	for _, state := range stateSet.States() {
-		for input, newStates := range nfa.transitions.get(state) {
+		for input, newStates := range nfa.transitions.Row(state) {
 			unionRow.add(input, newStates)
 		}
 	}

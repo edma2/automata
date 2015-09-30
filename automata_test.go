@@ -36,17 +36,17 @@ func TestTransitionTable(t *testing.T) {
 	table := make(TransitionTable)
 	var actual string
 
-	actual = table.get("a").states('1').String()
+	actual = table.Row("a").Column('1').String()
 	if actual != "{}" {
 		t.Errorf("get() and states() should return defaults, actual: %s, expected: {}", actual)
 	}
-	table.get("a").add('1', NewStateSet("b", "c"))
-	actual = table.get("a").states('1').String()
+	table.Row("a").add('1', NewStateSet("b", "c"))
+	actual = table.Row("a").Column('1').String()
 	if actual != "{b,c}" {
 		t.Errorf("add() should persist values, actual: %s, expected: {b,c}", actual)
 	}
-	table.get("a").add('1', NewStateSet("d"))
-	actual = table.get("a").states('1').String()
+	table.Row("a").add('1', NewStateSet("d"))
+	actual = table.Row("a").Column('1').String()
 	if actual != "{b,c,d}" {
 		t.Errorf("add() should persist values, actual: %s, expected: {b,c,d}", actual)
 	}
