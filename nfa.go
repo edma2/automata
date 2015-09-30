@@ -7,17 +7,16 @@ import (
 	"strings"
 )
 
-// A State in the automaton is identified by a human-readable UTF-8
-// encoded string.
+// A state in the automaton is identified by a sequence of bytes.
 type State string
 
-// A set of States
+// A set of States.
 // States in a StateSet are always unique.
 type StateSet struct {
 	states map[State]bool
 }
 
-// Create a new StateSet - silently ignore duplicates
+// Returns a new state set, silently ignoring duplicate states.
 func NewStateSet(states ...State) *StateSet {
 	stateSet := new(StateSet)
 	stateSet.states = make(map[State]bool)
@@ -27,7 +26,8 @@ func NewStateSet(states ...State) *StateSet {
 	return stateSet
 }
 
-// Return states as an array (in no particular order)
+// Returns the states in this state set as an array.
+// The states in the array are not in any particular order.
 func (stateSet *StateSet) States() []State {
 	a := make([]State, len(stateSet.states))
 	i := 0
@@ -38,11 +38,12 @@ func (stateSet *StateSet) States() []State {
 	return a
 }
 
+// Returns true if this state set contains state.
 func (stateSet *StateSet) Contains(state State) bool {
 	return stateSet.states[state]
 }
 
-// Display a StateSet as a string (e.g. "{1,4,6}")
+// Returns this state set as a string (e.g. "{1,4,6}").
 func (stateSet *StateSet) String() string {
 	states := stateSet.States()
 	a := make([]string, len(states))
@@ -53,7 +54,8 @@ func (stateSet *StateSet) String() string {
 	return fmt.Sprintf("{%s}", strings.Join(a, ","))
 }
 
-// Return true if this StateSet contains at least one state also in other.
+// Returns true if this states set contains at least one state that
+// is also in another state set.
 func (stateSet *StateSet) ContainsAny(other *StateSet) bool {
 	for state, _ := range other.states {
 		if stateSet.Contains(state) {
@@ -63,24 +65,25 @@ func (stateSet *StateSet) ContainsAny(other *StateSet) bool {
 	return false
 }
 
-// Combine two StateSets, returning a new StateSet
-func (stateSet *StateSet) Concat(other *StateSet) *StateSet {
-	states := append(stateSet.States(), other.States()...)
-	return NewStateSet(states...)
+// Adds another state set's states to this one.
+func (stateSet *StateSet) Add(other *StateSet) {
+	for _, state := range other.States() {
+		stateSet.states[state] = true
+	}
 }
 
-// An input symbol
+// An input symbol.
+// Automata input is always a sequence of runes (a Unicode string).
 type Symbol rune
 
-// A NFA-ε is represented formally by a 5-tuple, (Q, Σ, Δ, q0, F), consisting of
-//
-// a finite set of states Q
-// a finite set of input symbols Σ
-// a transition function Δ : Q × (Σ ∪ {ε}) → P(Q)
-
-type Row map[Symbol]*StateSet
+// A transition table.
 type TransitionTable map[State]Row
 
+// A row in a transition table. It maps an input symbol to the next set of
+// possible states.
+type Row map[Symbol]*StateSet
+
+// Returns the row for a given state in this table.
 func (table TransitionTable) Row(state State) Row {
 	if table[state] == nil {
 		table[state] = make(Row)
@@ -88,6 +91,7 @@ func (table TransitionTable) Row(state State) Row {
 	return table[state]
 }
 
+// Returns the column (a state set) for a given symbol in this row.
 func (row Row) Column(input Symbol) *StateSet {
 	if row[input] == nil {
 		row[input] = NewStateSet()
@@ -95,13 +99,6 @@ func (row Row) Column(input Symbol) *StateSet {
 	return row[input]
 }
 
-// TODO: move to StateSet?
-func (row Row) add(input Symbol, newStates *StateSet) {
-	row[input] = row.Column(input).Concat(newStates)
-}
-
-// an initial (or start) state q0 ∈ Q
-// a set of states F distinguished as accepting (or final) states F ⊆ Q.
 type NFA struct {
 	transitions TransitionTable
 	startState  State
@@ -112,6 +109,7 @@ type DFA struct {
 	NFA
 }
 
+// Returns a new NFA with given start state and final states.
 func NewNFA(startState State, finalStates *StateSet) *NFA {
 	return &NFA{
 		startState:  startState,
@@ -119,25 +117,27 @@ func NewNFA(startState State, finalStates *StateSet) *NFA {
 		transitions: make(TransitionTable)}
 }
 
+// Adds a new transition to this NFA.
 func (nfa *NFA) Add(oldState State, input Symbol, newStates *StateSet) {
-	nfa.transitions.Row(oldState).add(input, newStates)
+	nfa.transitions.Row(oldState).Column(input).Add(newStates)
 }
 
+// Compiles this NFA to a DFA.
 func (nfa *NFA) Compile() *DFA {
 	dfa := new(DFA)
 	dfa.transitions = make(TransitionTable)
 	dfa.finalStates = NewStateSet()
-	powerSetConstruction(nfa, dfa, nil)
-	// TODO: compute DFA final states
+	powersetConstruction(nfa, dfa, nil)
 	return dfa
 }
 
-func powerSetConstruction(nfa *NFA, dfa *DFA, stateSet *StateSet) {
+// Implements the powerset construction algorithm.
+func powersetConstruction(nfa *NFA, dfa *DFA, stateSet *StateSet) {
 	// if nil, then we're starting from start state
 	if stateSet == nil {
 		startStateSet := NewStateSet(nfa.startState)
 		dfa.startState = State(startStateSet.String()) // TODO: stateSet.FoldState()?
-		powerSetConstruction(nfa, dfa, startStateSet)
+		powersetConstruction(nfa, dfa, startStateSet)
 		return
 	}
 	dfaState := State(stateSet.String())
@@ -150,12 +150,12 @@ func powerSetConstruction(nfa *NFA, dfa *DFA, stateSet *StateSet) {
 	unionRow := make(Row)
 	for _, state := range stateSet.States() {
 		for input, newStates := range nfa.transitions.Row(state) {
-			unionRow.add(input, newStates)
+			unionRow.Column(input).Add(newStates)
 		}
 	}
 	dfa.transitions[dfaState] = unionRow
 	for _, newStates := range unionRow {
-		powerSetConstruction(nfa, dfa, newStates)
+		powersetConstruction(nfa, dfa, newStates)
 	}
 }
 

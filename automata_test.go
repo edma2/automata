@@ -25,7 +25,7 @@ func TestStateSet(t *testing.T) {
 
 	combined := emptyState
 	for _, test := range tests {
-		combined = combined.Concat(test.stateSet)
+		combined.Add(test.stateSet)
 	}
 	if combined.String() != "{a,b,c,d}" {
 		t.Errorf("Concat() expected: {a,b,c,d}, actual: %s", combined.String())
@@ -40,12 +40,12 @@ func TestTransitionTable(t *testing.T) {
 	if actual != "{}" {
 		t.Errorf("get() and states() should return defaults, actual: %s, expected: {}", actual)
 	}
-	table.Row("a").add('1', NewStateSet("b", "c"))
+	table.Row("a").Column('1').Add(NewStateSet("b", "c"))
 	actual = table.Row("a").Column('1').String()
 	if actual != "{b,c}" {
 		t.Errorf("add() should persist values, actual: %s, expected: {b,c}", actual)
 	}
-	table.Row("a").add('1', NewStateSet("d"))
+	table.Row("a").Column('1').Add(NewStateSet("d"))
 	actual = table.Row("a").Column('1').String()
 	if actual != "{b,c,d}" {
 		t.Errorf("add() should persist values, actual: %s, expected: {b,c,d}", actual)
