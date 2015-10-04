@@ -73,7 +73,7 @@ func TestChessboard(t *testing.T) {
 	nfa.Add("9", 'b', "5")
 
 	dfa := nfa.Compile()
-	fmt.Println(dfa)
+	//fmt.Println(dfa)
 	if ok := dfa.Execute("rbb"); !ok {
 		t.Error("rbb must be accepted")
 	}
@@ -93,4 +93,7 @@ func TestClosure(t *testing.T) {
 
 	testString(t, closure(nfa, "A"), "{A}")
 	testString(t, closure(nfa, "E"), "{B,C,D,E}")
+
+	nfa2 := noEpsilons(nfa)
+	fmt.Println(nfa2)
 }

@@ -109,7 +109,9 @@ func noEpsilons(nfa *NFA) *NFA {
 		urow := make(row)
 		for q := range cl {
 			for a, next := range nfa.delta[q] {
-				urow.col(a).union(next)
+				if a != 'ε' {
+					urow.col(a).union(next)
+				}
 			}
 			if cl.exists(nfa.final) {
 				nfa2.final[q] = true
