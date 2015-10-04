@@ -17,6 +17,32 @@ type state string
 // A stateSet implements a set of states.
 type stateSet map[state]bool
 
+// A symbol represents a character in the alphabet of an automaton.
+// Within a transition table, the symbol 'ε' (\u03b5) represents a
+// transition that consumes no input symbols.
+type symbol rune
+
+// A ttab is a transition table in an automaton, mapping states to rows.
+type ttab map[state]row
+
+// A row maps an input symbol to the next set of possible states.
+type row map[symbol]stateSet
+
+// An NFA is a Nondeterministic Finite Automaton with ε-transitions.
+// NFA's are not executable, but can compile to executable DFA's.
+type NFA struct {
+	delta ttab
+	q0    state
+	final stateSet
+}
+
+// A DFA is a (read-only) Deterministic Finite Automaton which has
+// been compiled from an NFA.  DFA's are executable, but can only be
+// built using the NFA interface.
+type DFA struct {
+	nfa *NFA
+}
+
 // Singleton collapses sets of states into singleton states.
 // Example: calling singleton on a set with states "a", "b", "c"
 // gives you a new state "{a,b,c}".
@@ -53,17 +79,6 @@ func (ss stateSet) union(other stateSet) {
 	}
 }
 
-// A symbol represents a character in the alphabet of an automaton.
-// Within a transition table, the symbol 'ε' (\u03b5) represents a
-// transition that consumes no input symbols.
-type symbol rune
-
-// A ttab is a transition table in an automaton, mapping states to rows.
-type ttab map[state]row
-
-// A row maps an input symbol to the next set of possible states.
-type row map[symbol]stateSet
-
 // Row returns the row for a given state in the table. If the row
 // doesn't exist, an empty one is created and returned.
 func (tab ttab) row(q state) row {
@@ -80,21 +95,6 @@ func (r row) col(a symbol) stateSet {
 		r[a] = make(stateSet)
 	}
 	return r[a]
-}
-
-// An NFA is a Nondeterministic Finite Automaton with ε-transitions.
-// NFA's are not executable, but can compile to executable DFA's.
-type NFA struct {
-	delta ttab
-	q0    state
-	final stateSet
-}
-
-// A DFA is a (read-only) Deterministic Finite Automaton which has
-// been compiled from an NFA.  DFA's are executable, but can only be
-// built using the NFA interface.
-type DFA struct {
-	nfa *NFA
 }
 
 // Closure of q is defined as the set of states you can reach from
