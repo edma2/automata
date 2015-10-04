@@ -94,9 +94,30 @@ func closure0(nfa *NFA, q state, cl stateSet) {
 		return
 	}
 	cl[q] = true
-	for q := range nfa.delta.row(q).col('ε') {
-		closure0(nfa, q, cl)
+	if ss, ok := nfa.delta.row(q)['ε']; ok {
+		for q := range ss {
+			closure0(nfa, q, cl)
+		}
 	}
+}
+
+// δN(q,a) is the union over all p in CL(q) of δE(p, a).
+func noEpsilons(nfa *NFA) *NFA {
+	nfa2 := New(nfa.q0)
+	for q, _ := range nfa.delta {
+		cl := closure(nfa, q)
+		urow := make(row)
+		for q := range cl {
+			for a, next := range nfa.delta[q] {
+				urow.col(a).union(next)
+			}
+			if cl.exists(nfa.final) {
+				nfa2.final[q] = true
+			}
+		}
+		nfa2.delta[q] = urow
+	}
+	return nfa2
 }
 
 // Returns a new NFA with given start state and final states.
@@ -122,7 +143,8 @@ func (nfa *NFA) Compile() *NFA {
 	ss := make(stateSet)
 	ss[nfa.q0] = true
 	dfa := New(ss.singleton())
-	powerset(nfa, dfa, ss)
+	nfa2 := noEpsilons(nfa)
+	powerset(nfa2, dfa, ss)
 	return dfa
 }
 
