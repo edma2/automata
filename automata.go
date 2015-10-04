@@ -101,23 +101,31 @@ func closure0(nfa *NFA, q state, cl stateSet) {
 	}
 }
 
+// Returns a row which is the union over all states
+// q in ss of δ(q, a). 'ε' inputs are skipped.
+func rowUnion(nfa *NFA, ss stateSet) row {
+	urow := make(row)
+	for q := range ss {
+		for a, next := range nfa.delta.row(q) {
+			if a != 'ε' {
+				urow.col(a).union(next)
+			}
+		}
+	}
+	return urow
+}
+
 // δN(q,a) is the union over all p in CL(q) of δE(p, a).
 func noEpsilons(nfa *NFA) *NFA {
 	nfa2 := New(nfa.q0)
 	for q, _ := range nfa.delta {
 		cl := closure(nfa, q)
-		urow := make(row)
+		nfa2.delta[q] = rowUnion(nfa, cl)
 		for q := range cl {
-			for a, next := range nfa.delta[q] {
-				if a != 'ε' {
-					urow.col(a).union(next)
-				}
-			}
 			if cl.exists(nfa.final) {
 				nfa2.final[q] = true
 			}
 		}
-		nfa2.delta[q] = urow
 	}
 	return nfa2
 }
@@ -158,12 +166,7 @@ func powerset(nfa *NFA, dfa *NFA, ss stateSet) {
 	if ss.exists(nfa.final) {
 		dfa.final[q] = true
 	}
-	urow := make(row)
-	for q := range ss {
-		for a, next := range nfa.delta.row(q) {
-			urow.col(a).union(next)
-		}
-	}
+	urow := rowUnion(nfa, ss)
 	for a, next := range urow {
 		dfa.delta.row(q).col(a)[next.singleton()] = true
 	}
