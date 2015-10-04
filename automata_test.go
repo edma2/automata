@@ -5,6 +5,12 @@ import (
 	"testing"
 )
 
+func testString(t *testing.T, actual fmt.Stringer, expected string) {
+	if actual.String() != expected {
+		t.Errorf("expected %s, got %s", expected, actual)
+	}
+}
+
 func TestStateSet(t *testing.T) {
 	emptyState := NewStateSet()
 	var tests = []struct {
@@ -18,38 +24,26 @@ func TestStateSet(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if actual := test.stateSet.String(); actual != test.expected {
-			t.Errorf("input: %s, actual: %s, expected: %s", test.stateSet, actual, test.expected)
-		}
+		testString(t, test.stateSet, test.expected)
 	}
 
 	combinedStates := emptyState
 	for _, test := range tests {
 		combinedStates.Include(test.stateSet)
 	}
-	if combinedStates.String() != "{a,b,c,d}" {
-		t.Errorf("Concat() expected: {a,b,c,d}, actual: %s", combinedStates.String())
-	}
+	testString(t, combinedStates, "{a,b,c,d}")
 }
 
 func TestTransitionTable(t *testing.T) {
 	table := make(TransitionTable)
-	var actual string
 
-	actual = table.Row("a").Column('1').String()
-	if actual != "{}" {
-		t.Errorf("get() and states() should return defaults, actual: %s, expected: {}", actual)
-	}
+	testString(t, table.Row("a").Column('1'), "{}")
+
 	table.Row("a").Column('1').Include(NewStateSet("b", "c"))
-	actual = table.Row("a").Column('1').String()
-	if actual != "{b,c}" {
-		t.Errorf("add() should persist values, actual: %s, expected: {b,c}", actual)
-	}
+	testString(t, table.Row("a").Column('1'), "{b,c}")
+
 	table.Row("a").Column('1').Add("d")
-	actual = table.Row("a").Column('1').String()
-	if actual != "{b,c,d}" {
-		t.Errorf("add() should persist values, actual: %s, expected: {b,c,d}", actual)
-	}
+	testString(t, table.Row("a").Column('1'), "{b,c,d}")
 }
 
 func TestChessboard(t *testing.T) {
@@ -80,4 +74,20 @@ func TestChessboard(t *testing.T) {
 	if ok := dfa.Execute("rbb"); !ok {
 		t.Error("rbb must be accepted")
 	}
+}
+
+func TestClosure(t *testing.T) {
+	nfa := NewNFA("A", NewStateSet("D"))
+
+	nfa.Add("A", '0', NewStateSet("E"))
+	nfa.Add("A", '1', NewStateSet("B"))
+	nfa.Add("B", '1', NewStateSet("C"))
+	nfa.Add("B", 'ε', NewStateSet("D"))
+	nfa.Add("C", '1', NewStateSet("D"))
+	nfa.Add("E", '0', NewStateSet("F"))
+	nfa.Add("E", 'ε', NewStateSet("B", "C"))
+	nfa.Add("F", '0', NewStateSet("D"))
+
+	testString(t, closure(nfa, "A"), "{A}")
+	testString(t, closure(nfa, "E"), "{B,C,D,E}")
 }

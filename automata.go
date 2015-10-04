@@ -114,6 +114,24 @@ type NFA struct {
 	finalStates *StateSet
 }
 
+// CL(q) = set of states you can reach from state q following only arcs labeled ε.
+func closure(nfa *NFA, q State) *StateSet {
+	cl := NewStateSet()
+	_closure(nfa, q, cl)
+	return cl
+}
+
+func _closure(nfa *NFA, q State, cl *StateSet) {
+	if cl.Contains(q) {
+		return
+	}
+	cl.Add(q)
+	row := nfa.transitions.Row(q)
+	for q, _ := range row.Column('ε').states {
+		_closure(nfa, q, cl)
+	}
+}
+
 type DFA struct {
 	transitions map[State]map[Symbol]State
 	startState  State
