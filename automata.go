@@ -145,8 +145,7 @@ func (nfa *NFA) Compile() *NFA {
 	ss := make(stateSet)
 	ss[nfa.q0] = true
 	dfa := New(ss.singleton())
-	nfa2 := noEpsilons(nfa)
-	powerset(nfa2, dfa, ss)
+	powerset(noEpsilons(nfa), dfa, ss)
 	return dfa
 }
 
