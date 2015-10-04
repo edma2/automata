@@ -121,10 +121,8 @@ func noEpsilons(nfa *NFA) *NFA {
 	for q, _ := range nfa.delta {
 		cl := closure(nfa, q)
 		nfa2.delta[q] = rowUnion(nfa, cl)
-		for q := range cl {
-			if cl.exists(nfa.final) {
-				nfa2.final[q] = true
-			}
+		if cl.exists(nfa.final) {
+			nfa2.final.union(cl)
 		}
 	}
 	return nfa2
