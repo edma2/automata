@@ -82,6 +82,10 @@ type NFA struct {
 	final stateSet
 }
 
+type DFA struct {
+	nfa *NFA
+}
+
 // CL(q) = set of states you can reach from state q following only arcs labeled ε.
 func closure(nfa *NFA, q state) stateSet {
 	cl := make(stateSet)
@@ -117,7 +121,7 @@ func rowUnion(nfa *NFA, ss stateSet) row {
 
 // δN(q,a) is the union over all p in CL(q) of δE(p, a).
 func noEpsilons(nfa *NFA) *NFA {
-	nfa2 := New(nfa.q0)
+	nfa2 := NewNFA(nfa.q0)
 	for q, _ := range nfa.delta {
 		cl := closure(nfa, q)
 		nfa2.delta[q] = rowUnion(nfa, cl)
@@ -129,7 +133,7 @@ func noEpsilons(nfa *NFA) *NFA {
 }
 
 // Returns a new NFA with given start state and final states.
-func New(q0 state, finals ...state) *NFA {
+func NewNFA(q0 state, finals ...state) *NFA {
 	final := make(stateSet)
 	for _, q := range finals {
 		final[q] = true
@@ -147,11 +151,12 @@ func (nfa *NFA) Add(q state, a symbol, qs ...state) {
 }
 
 // Compiles this NFA to a DFA-equivalent NFA.
-func (nfa *NFA) Compile() *NFA {
+func (nfa *NFA) Compile() *DFA {
 	ss := make(stateSet)
 	ss[nfa.q0] = true
-	dfa := New(ss.singleton())
-	powerset(noEpsilons(nfa), dfa, ss)
+	dfa := new(DFA)
+	dfa.nfa = NewNFA(ss.singleton())
+	powerset(noEpsilons(nfa), dfa.nfa, ss)
 	return dfa
 }
 
@@ -173,14 +178,18 @@ func powerset(nfa *NFA, dfa *NFA, ss stateSet) {
 	}
 }
 
-func (dfa *NFA) String() string {
+func (dfa *DFA) String() string {
+	return dfa.nfa.String()
+}
+
+func (nfa *NFA) String() string {
 	var lines []string
-	for q, r := range dfa.delta {
+	for q, r := range nfa.delta {
 		mark := ""
-		if dfa.final[q] {
+		if nfa.final[q] {
 			mark = mark + "*"
 		}
-		if dfa.q0 == q {
+		if nfa.q0 == q {
 			mark = mark + ">"
 		}
 		for a, next := range r {
@@ -198,11 +207,11 @@ func (ss stateSet) get1() state {
 	return "" // not reached
 }
 
-func (dfa *NFA) Execute(input string) bool {
-	q := dfa.q0
+func (dfa *DFA) Execute(input string) bool {
+	q := dfa.nfa.q0
 	for _, runeValue := range input {
 		a := symbol(runeValue)
-		q = dfa.delta[q][a].get1()
+		q = dfa.nfa.delta[q][a].get1()
 	}
-	return dfa.final[q]
+	return dfa.nfa.final[q]
 }

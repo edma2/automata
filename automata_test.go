@@ -11,7 +11,7 @@ func testString(t *testing.T, actual fmt.Stringer, expected string) {
 	}
 }
 
-func mustAccept(t *testing.T, dfa *NFA, inputs ...string) {
+func mustAccept(t *testing.T, dfa *DFA, inputs ...string) {
 	for _, input := range inputs {
 		if ok := dfa.Execute(input); !ok {
 			t.Errorf("%s must be accepted", input)
@@ -58,7 +58,7 @@ func TestTable(t *testing.T) {
 }
 
 func TestChessboard(t *testing.T) {
-	nfa := New("1", "9")
+	nfa := NewNFA("1", "9")
 
 	nfa.Add("1", 'r', "2", "4")
 	nfa.Add("2", 'r', "4", "6")
@@ -86,7 +86,7 @@ func TestChessboard(t *testing.T) {
 }
 
 func TestClosure(t *testing.T) {
-	nfa := New("A", "D")
+	nfa := NewNFA("A", "D")
 
 	nfa.Add("A", '0', "E")
 	nfa.Add("A", '1', "B")
