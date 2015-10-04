@@ -79,7 +79,7 @@ func (r row) col(a symbol) stateSet {
 }
 
 // A Nondeterministic Finite Automaton with ε-transitions.  NFA's are
-// not executable, only DFA's are (see below).
+// not executable, but can compile to executable DFA's.
 type NFA struct {
 	delta ttab
 	q0    state
