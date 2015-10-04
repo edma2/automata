@@ -1,4 +1,6 @@
-// Nondeterministic finite automatons (with ε-transitions)
+// Package automata provides an interface for defining NFAs (with
+// ε-transitions), compiling them to DFAs, and executing DFAs against
+// input strings.
 package automata
 
 import (
@@ -7,19 +9,19 @@ import (
 	"strings"
 )
 
-// A state in the automaton is identified by a sequence of bytes.
+// A state is a string that uniquely identifies a state of an automaton.
 type state string
 
-// A set of states.
-// States in a set are always unique.
+// A stateSet implements a set of states.
 type stateSet map[state]bool
 
-// Fold this state set into a single state.
+// Singleton collapses sets of states into singleton states.
+// Example: calling singleton on a set with states "a", "b", "c"
+// gives you a new state "{a,b,c}".
 func (ss stateSet) singleton() state {
 	return state(ss.String())
 }
 
-// Returns this state set as a string (e.g. "{1,4,6}").
 func (ss stateSet) String() string {
 	a := make([]string, len(ss))
 	i := 0
@@ -31,9 +33,9 @@ func (ss stateSet) String() string {
 	return fmt.Sprintf("{%s}", strings.Join(a, ","))
 }
 
-// Returns true if this states set contains at least one state that
-// is also in another state set.
-func (ss stateSet) exists(other stateSet) bool {
+// Intersects compares two sets and returns true if the intersection
+// is not empty.
+func (ss stateSet) intersects(other stateSet) bool {
 	for q := range other {
 		if ss[q] {
 			return true
@@ -42,25 +44,24 @@ func (ss stateSet) exists(other stateSet) bool {
 	return false
 }
 
-// Includes another state set's states to this one.
+// Union adds each state from another set.
 func (ss stateSet) union(other stateSet) {
 	for q := range other {
 		ss[q] = true
 	}
 }
 
-// An input symbol.
-// Automata input is always a sequence of runes (a Unicode string).
+// A symbol is what automata inputs are composed of.
 type symbol rune
 
-// A transition table.
+// A ttab is a transition table in an automaton, mapping states to rows.
 type ttab map[state]row
 
-// A row in a transition table. It maps an input symbol to the next set of
-// possible states.
+// A row maps an input symbol to the next set of possible states.
 type row map[symbol]stateSet
 
-// Returns the row for a given state in this table.
+// Row returns the row for a given state in the table. If the row
+// doesn't exist, an empty one is created and returned.
 func (tab ttab) row(q state) row {
 	if tab[q] == nil {
 		tab[q] = make(row)
@@ -68,7 +69,8 @@ func (tab ttab) row(q state) row {
 	return tab[q]
 }
 
-// Returns the column (a state set) for a given symbol in this row.
+// Column returns the next set of possible states for an input symbol.
+// If the set doesn't exist, an empty one is created and returned.
 func (r row) col(a symbol) stateSet {
 	if r[a] == nil {
 		r[a] = make(stateSet)
@@ -76,17 +78,23 @@ func (r row) col(a symbol) stateSet {
 	return r[a]
 }
 
+// A Nondeterministic Finite Automaton with ε-transitions.  NFA's are
+// not executable, only DFA's are (see below).
 type NFA struct {
 	delta ttab
 	q0    state
 	final stateSet
 }
 
+// A (read-only) Deterministic Finite Automaton which has been compiled
+// from an NFA.  DFA's are executable, but can only be built using the
+// NFA interface.
 type DFA struct {
 	nfa *NFA
 }
 
-// CL(q) = set of states you can reach from state q following only arcs labeled ε.
+// Closure of q is defined as the set of states you can reach from
+// state q following only arcs labeled ε.
 func closure(nfa *NFA, q state) stateSet {
 	cl := make(stateSet)
 	closure0(nfa, q, cl)
@@ -105,8 +113,6 @@ func closure0(nfa *NFA, q state, cl stateSet) {
 	}
 }
 
-// Returns a row which is the union over all states
-// q in ss of δ(q, a). 'ε' inputs are skipped.
 func rowUnion(nfa *NFA, ss stateSet) row {
 	urow := make(row)
 	for q := range ss {
@@ -119,20 +125,19 @@ func rowUnion(nfa *NFA, ss stateSet) row {
 	return urow
 }
 
-// δN(q,a) is the union over all p in CL(q) of δE(p, a).
 func noEpsilons(nfa *NFA) *NFA {
 	nfa2 := NewNFA(nfa.q0)
 	for q, _ := range nfa.delta {
 		cl := closure(nfa, q)
 		nfa2.delta[q] = rowUnion(nfa, cl)
-		if cl.exists(nfa.final) {
+		if cl.intersects(nfa.final) {
 			nfa2.final.union(cl)
 		}
 	}
 	return nfa2
 }
 
-// Returns a new NFA with given start state and final states.
+// NewNFA returns a new NFA with given start state and final states.
 func NewNFA(q0 state, finals ...state) *NFA {
 	final := make(stateSet)
 	for _, q := range finals {
@@ -141,7 +146,7 @@ func NewNFA(q0 state, finals ...state) *NFA {
 	return &NFA{q0: q0, final: final, delta: make(ttab)}
 }
 
-// Adds a new transition to this NFA.
+// Add adds a new transition to the NFA.
 func (nfa *NFA) Add(q state, a symbol, qs ...state) {
 	ss := make(stateSet)
 	for _, q := range qs {
@@ -150,7 +155,7 @@ func (nfa *NFA) Add(q state, a symbol, qs ...state) {
 	nfa.delta.row(q).col(a).union(ss)
 }
 
-// Compiles this NFA to a DFA-equivalent NFA.
+// Compile compiles the NFA to a DFA.
 func (nfa *NFA) Compile() *DFA {
 	ss := make(stateSet)
 	ss[nfa.q0] = true
@@ -160,13 +165,12 @@ func (nfa *NFA) Compile() *DFA {
 	return dfa
 }
 
-// Implements the powerset construction algorithm.
 func powerset(nfa *NFA, dfa *NFA, ss stateSet) {
 	q := ss.singleton()
 	if _, ok := dfa.delta[q]; ok {
 		return // visited
 	}
-	if ss.exists(nfa.final) {
+	if ss.intersects(nfa.final) {
 		dfa.final[q] = true
 	}
 	urow := rowUnion(nfa, ss)
@@ -199,7 +203,7 @@ func (nfa *NFA) String() string {
 	return strings.Join(lines, "\n")
 }
 
-// Get the one and only state in this state set.
+// Get1 returns the one and only state in the state set.
 func (ss stateSet) get1() state {
 	for q := range ss {
 		return q
@@ -207,6 +211,9 @@ func (ss stateSet) get1() state {
 	return "" // not reached
 }
 
+// Execute runs the DFA aginst an input string, and returns true if
+// the string matches (i.e. is a member of the language defined by the
+// automaton).
 func (dfa *DFA) Execute(input string) bool {
 	q := dfa.nfa.q0
 	for _, runeValue := range input {
