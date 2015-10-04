@@ -53,7 +53,9 @@ func (ss stateSet) union(other stateSet) {
 	}
 }
 
-// A symbol is what automata inputs are composed of.
+// A symbol represents a character in the alphabet of an automaton.
+// Within a transition table, the symbol 'ε' (\u03b5) represents a
+// transition that consumes no input symbols.
 type symbol rune
 
 // A ttab is a transition table in an automaton, mapping states to rows.
