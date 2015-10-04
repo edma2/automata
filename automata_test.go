@@ -11,6 +11,14 @@ func testString(t *testing.T, actual fmt.Stringer, expected string) {
 	}
 }
 
+func mustAccept(t *testing.T, dfa *NFA, inputs ...string) {
+	for _, input := range inputs {
+		if ok := dfa.Execute(input); !ok {
+			t.Errorf("%s must be accepted", input)
+		}
+	}
+}
+
 func TestStrings(t *testing.T) {
 	var tests = []struct {
 		qs       []state
@@ -74,9 +82,7 @@ func TestChessboard(t *testing.T) {
 
 	dfa := nfa.Compile()
 	//fmt.Println(dfa)
-	if ok := dfa.Execute("rbb"); !ok {
-		t.Error("rbb must be accepted")
-	}
+	mustAccept(t, dfa, "rbb")
 }
 
 func TestClosure(t *testing.T) {
@@ -94,6 +100,10 @@ func TestClosure(t *testing.T) {
 	testString(t, closure(nfa, "A"), "{A}")
 	testString(t, closure(nfa, "E"), "{B,C,D,E}")
 
-	nfa2 := noEpsilons(nfa)
-	fmt.Println(nfa2)
+	dfa := nfa.Compile()
+
+	mustAccept(t, dfa, "01", "0")
+	if ok := dfa.Execute(""); ok {
+		t.Error("empty input must not be accepted")
+	}
 }
