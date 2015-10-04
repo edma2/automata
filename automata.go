@@ -8,52 +8,24 @@ import (
 )
 
 // A state in the automaton is identified by a sequence of bytes.
-type State string
+type state string
 
 // A set of states.
 // States in a set are always unique.
-type StateSet struct {
-	states map[State]bool
-}
-
-// Returns a new state set, silently ignoring duplicate states.
-func NewStateSet(states ...State) *StateSet {
-	stateSet := new(StateSet)
-	stateSet.states = make(map[State]bool)
-	for _, state := range states {
-		stateSet.states[state] = true
-	}
-	return stateSet
-}
-
-// Returns the states in this state set as an array.
-// The states in the array are not in any particular order.
-func (stateSet *StateSet) States() []State {
-	a := make([]State, len(stateSet.states))
-	i := 0
-	for state, _ := range stateSet.states {
-		a[i] = state
-		i = i + 1
-	}
-	return a
-}
+type stateSet map[state]bool
 
 // Fold this state set into a single state.
-func (stateSet *StateSet) Fold() State {
-	return State(stateSet.String())
-}
-
-// Returns true if this state set contains state.
-func (stateSet *StateSet) Contains(state State) bool {
-	return stateSet.states[state]
+func (ss stateSet) singleton() state {
+	return state(ss.String())
 }
 
 // Returns this state set as a string (e.g. "{1,4,6}").
-func (stateSet *StateSet) String() string {
-	states := stateSet.States()
-	a := make([]string, len(states))
-	for i, state := range states {
-		a[i] = string(state)
+func (ss stateSet) String() string {
+	a := make([]string, len(ss))
+	i := 0
+	for q := range ss {
+		a[i] = string(q)
+		i = i + 1
 	}
 	sort.Strings(a)
 	return fmt.Sprintf("{%s}", strings.Join(a, ","))
@@ -61,9 +33,9 @@ func (stateSet *StateSet) String() string {
 
 // Returns true if this states set contains at least one state that
 // is also in another state set.
-func (stateSet *StateSet) ContainsAny(other *StateSet) bool {
-	for state, _ := range other.states {
-		if stateSet.Contains(state) {
+func (ss stateSet) exists(other stateSet) bool {
+	for q := range other {
+		if ss[q] {
 			return true
 		}
 	}
@@ -71,150 +43,142 @@ func (stateSet *StateSet) ContainsAny(other *StateSet) bool {
 }
 
 // Includes another state set's states to this one.
-func (stateSet *StateSet) Include(other *StateSet) {
-	stateSet.Add(other.States()...)
-}
-
-func (stateSet *StateSet) Add(states ...State) {
-	for _, state := range states {
-		stateSet.states[state] = true
+func (ss stateSet) union(other stateSet) {
+	for q := range other {
+		ss[q] = true
 	}
 }
 
 // An input symbol.
 // Automata input is always a sequence of runes (a Unicode string).
-type Symbol rune
+type symbol rune
 
 // A transition table.
-type TransitionTable map[State]Row
+type ttab map[state]row
 
 // A row in a transition table. It maps an input symbol to the next set of
 // possible states.
-type Row map[Symbol]*StateSet
+type row map[symbol]stateSet
 
 // Returns the row for a given state in this table.
-func (table TransitionTable) Row(state State) Row {
-	if table[state] == nil {
-		table[state] = make(Row)
+func (tab ttab) row(q state) row {
+	if tab[q] == nil {
+		tab[q] = make(row)
 	}
-	return table[state]
+	return tab[q]
 }
 
 // Returns the column (a state set) for a given symbol in this row.
-func (row Row) Column(input Symbol) *StateSet {
-	if row[input] == nil {
-		row[input] = NewStateSet()
+func (r row) col(a symbol) stateSet {
+	if r[a] == nil {
+		r[a] = make(stateSet)
 	}
-	return row[input]
+	return r[a]
 }
 
 type NFA struct {
-	transitions TransitionTable
-	startState  State
-	finalStates *StateSet
+	delta ttab
+	q0    state
+	final stateSet
 }
 
 // CL(q) = set of states you can reach from state q following only arcs labeled ε.
-func closure(nfa *NFA, q State) *StateSet {
-	cl := NewStateSet()
-	_closure(nfa, q, cl)
+func closure(nfa *NFA, q state) stateSet {
+	cl := make(stateSet)
+	closure0(nfa, q, cl)
 	return cl
 }
 
-func _closure(nfa *NFA, q State, cl *StateSet) {
-	if cl.Contains(q) {
+func closure0(nfa *NFA, q state, cl stateSet) {
+	if cl[q] {
 		return
 	}
-	cl.Add(q)
-	row := nfa.transitions.Row(q)
-	for q, _ := range row.Column('ε').states {
-		_closure(nfa, q, cl)
+	cl[q] = true
+	for q := range nfa.delta.row(q).col('ε') {
+		closure0(nfa, q, cl)
 	}
-}
-
-type DFA struct {
-	transitions map[State]map[Symbol]State
-	startState  State
-	finalStates *StateSet
 }
 
 // Returns a new NFA with given start state and final states.
-func NewNFA(startState State, finalStates *StateSet) *NFA {
-	return &NFA{
-		startState:  startState,
-		finalStates: finalStates,
-		transitions: make(TransitionTable)}
+func New(q0 state, finals ...state) *NFA {
+	final := make(stateSet)
+	for _, q := range finals {
+		final[q] = true
+	}
+	return &NFA{q0: q0, final: final, delta: make(ttab)}
 }
 
 // Adds a new transition to this NFA.
-func (nfa *NFA) Add(oldState State, input Symbol, newStates *StateSet) {
-	nfa.transitions.Row(oldState).Column(input).Include(newStates)
-}
-
-// Adds a new transition to this DFA.
-func (dfa *DFA) add(oldState State, input Symbol, newState State) {
-	if dfa.transitions[oldState] == nil {
-		dfa.transitions[oldState] = make(map[Symbol]State)
+func (nfa *NFA) Add(q state, a symbol, qs ...state) {
+	ss := make(stateSet)
+	for _, q := range qs {
+		ss[q] = true
 	}
-	dfa.transitions[oldState][input] = newState
+	nfa.delta.row(q).col(a).union(ss)
 }
 
-// Compiles this NFA to a DFA.
-func (nfa *NFA) Compile() *DFA {
-	dfa := new(DFA)
-	dfa.transitions = make(map[State]map[Symbol]State)
-	dfa.finalStates = NewStateSet()
-	powersetConstruction(nfa, dfa, NewStateSet(nfa.startState))
+// Compiles this NFA to a DFA-equivalent NFA.
+func (nfa *NFA) Compile() *NFA {
+	ss := make(stateSet)
+	ss[nfa.q0] = true
+	dfa := New(ss.singleton())
+	powerset(nfa, dfa, ss)
 	return dfa
 }
 
 // Implements the powerset construction algorithm.
-func powersetConstruction(nfa *NFA, dfa *DFA, stateSet *StateSet) {
-	dfaState := stateSet.Fold()
-	if dfa.transitions[dfaState] != nil {
-		return
+func powerset(nfa *NFA, dfa *NFA, ss stateSet) {
+	q := ss.singleton()
+	if _, ok := dfa.delta[q]; ok {
+		return // visited
 	}
-	if stateSet.ContainsAny(nfa.finalStates) {
-		dfa.finalStates.Add(dfaState)
+	if ss.exists(nfa.final) {
+		dfa.final[q] = true
 	}
-	if dfa.startState == "" {
-		dfa.startState = dfaState
-	}
-	union := make(Row)
-	for _, state := range stateSet.States() {
-		for input, newStates := range nfa.transitions.Row(state) {
-			union.Column(input).Include(newStates)
+	urow := make(row)
+	for q := range ss {
+		for a, next := range nfa.delta.row(q) {
+			urow.col(a).union(next)
 		}
 	}
-	for input, newStates := range union {
-		dfa.add(dfaState, input, newStates.Fold())
+	for a, next := range urow {
+		dfa.delta.row(q).col(a)[next.singleton()] = true
 	}
-	for _, newStates := range union {
-		powersetConstruction(nfa, dfa, newStates)
+	for _, next := range urow {
+		powerset(nfa, dfa, next)
 	}
 }
 
-func (dfa *DFA) String() string {
+func (dfa *NFA) String() string {
 	var lines []string
-	for state, row := range dfa.transitions {
-		for input, newStates := range row {
-			special := ""
-			if dfa.finalStates.Contains(state) {
-				special = special + "*"
-			}
-			if dfa.startState == state {
-				special = special + ">"
-			}
-			lines = append(lines, fmt.Sprintf("%s		%s		%c	%s", special, state, input, newStates))
+	for q, r := range dfa.delta {
+		mark := ""
+		if dfa.final[q] {
+			mark = mark + "*"
+		}
+		if dfa.q0 == q {
+			mark = mark + ">"
+		}
+		for a, next := range r {
+			lines = append(lines, fmt.Sprintf("%s		%s		%c	%s", mark, q, a, next))
 		}
 	}
 	return strings.Join(lines, "\n")
 }
 
-func (dfa *DFA) Execute(input string) bool {
-	state := dfa.startState
-	for _, runeValue := range input {
-		state = dfa.transitions[state][Symbol(runeValue)]
+// Get the one and only state in this state set.
+func (ss stateSet) get1() state {
+	for q := range ss {
+		return q
 	}
-	return dfa.finalStates.Contains(state)
+	return "" // not reached
+}
+
+func (dfa *NFA) Execute(input string) bool {
+	q := dfa.q0
+	for _, runeValue := range input {
+		a := symbol(runeValue)
+		q = dfa.delta[q][a].get1()
+	}
+	return dfa.final[q]
 }

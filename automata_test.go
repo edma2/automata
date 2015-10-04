@@ -11,63 +11,66 @@ func testString(t *testing.T, actual fmt.Stringer, expected string) {
 	}
 }
 
-func TestStateSet(t *testing.T) {
-	emptyState := NewStateSet()
+func TestStrings(t *testing.T) {
 	var tests = []struct {
-		stateSet *StateSet
+		qs       []state
 		expected string
 	}{
-		{NewStateSet("a", "b", "b", "c"), "{a,b,c}"},
-		{NewStateSet("d", "d", "d", "d"), "{d}"},
-		{NewStateSet("b", "c", "a"), "{a,b,c}"},
-		{emptyState, "{}"},
+		{[]state{"a", "b", "b", "c"}, "{a,b,c}"},
+		{[]state{"d", "d", "d", "d"}, "{d}"},
+		{[]state{"b", "c", "a"}, "{a,b,c}"},
+		{[]state{}, "{}"},
 	}
 
+	union := make(stateSet)
 	for _, test := range tests {
-		testString(t, test.stateSet, test.expected)
+		ss := make(stateSet)
+		for _, q := range test.qs {
+			ss[q] = true
+		}
+		union.union(ss)
+		testString(t, ss, test.expected)
 	}
-
-	combinedStates := emptyState
-	for _, test := range tests {
-		combinedStates.Include(test.stateSet)
-	}
-	testString(t, combinedStates, "{a,b,c,d}")
+	testString(t, union, "{a,b,c,d}")
 }
 
-func TestTransitionTable(t *testing.T) {
-	table := make(TransitionTable)
+func TestTable(t *testing.T) {
+	tab := make(ttab)
 
-	testString(t, table.Row("a").Column('1'), "{}")
+	testString(t, tab.row("a").col('1'), "{}")
 
-	table.Row("a").Column('1').Include(NewStateSet("b", "c"))
-	testString(t, table.Row("a").Column('1'), "{b,c}")
+	ss := make(stateSet)
+	ss["b"] = true
+	ss["c"] = true
+	tab.row("a").col('1').union(ss)
+	testString(t, tab.row("a").col('1'), "{b,c}")
 
-	table.Row("a").Column('1').Add("d")
-	testString(t, table.Row("a").Column('1'), "{b,c,d}")
+	tab.row("a").col('1')["d"] = true
+	testString(t, tab.row("a").col('1'), "{b,c,d}")
 }
 
 func TestChessboard(t *testing.T) {
-	nfa := NewNFA("1", NewStateSet("9"))
+	nfa := New("1", "9")
 
-	nfa.Add("1", 'r', NewStateSet("2", "4"))
-	nfa.Add("2", 'r', NewStateSet("4", "6"))
-	nfa.Add("3", 'r', NewStateSet("2", "6"))
-	nfa.Add("4", 'r', NewStateSet("2", "8"))
-	nfa.Add("5", 'r', NewStateSet("2", "4", "6", "8"))
-	nfa.Add("6", 'r', NewStateSet("2", "8"))
-	nfa.Add("7", 'r', NewStateSet("4", "8"))
-	nfa.Add("8", 'r', NewStateSet("4", "6"))
-	nfa.Add("9", 'r', NewStateSet("6", "8"))
+	nfa.Add("1", 'r', "2", "4")
+	nfa.Add("2", 'r', "4", "6")
+	nfa.Add("3", 'r', "2", "6")
+	nfa.Add("4", 'r', "2", "8")
+	nfa.Add("5", 'r', "2", "4", "6", "8")
+	nfa.Add("6", 'r', "2", "8")
+	nfa.Add("7", 'r', "4", "8")
+	nfa.Add("8", 'r', "4", "6")
+	nfa.Add("9", 'r', "6", "8")
 
-	nfa.Add("1", 'b', NewStateSet("5"))
-	nfa.Add("2", 'b', NewStateSet("1", "3", "5"))
-	nfa.Add("3", 'b', NewStateSet("5"))
-	nfa.Add("4", 'b', NewStateSet("1", "5", "7"))
-	nfa.Add("5", 'b', NewStateSet("1", "3", "7", "9"))
-	nfa.Add("6", 'b', NewStateSet("3", "5", "9"))
-	nfa.Add("7", 'b', NewStateSet("5"))
-	nfa.Add("8", 'b', NewStateSet("5", "7", "9"))
-	nfa.Add("9", 'b', NewStateSet("5"))
+	nfa.Add("1", 'b', "5")
+	nfa.Add("2", 'b', "1", "3", "5")
+	nfa.Add("3", 'b', "5")
+	nfa.Add("4", 'b', "1", "5", "7")
+	nfa.Add("5", 'b', "1", "3", "7", "9")
+	nfa.Add("6", 'b', "3", "5", "9")
+	nfa.Add("7", 'b', "5")
+	nfa.Add("8", 'b', "5", "7", "9")
+	nfa.Add("9", 'b', "5")
 
 	dfa := nfa.Compile()
 	fmt.Println(dfa)
@@ -77,16 +80,16 @@ func TestChessboard(t *testing.T) {
 }
 
 func TestClosure(t *testing.T) {
-	nfa := NewNFA("A", NewStateSet("D"))
+	nfa := New("A", "D")
 
-	nfa.Add("A", '0', NewStateSet("E"))
-	nfa.Add("A", '1', NewStateSet("B"))
-	nfa.Add("B", '1', NewStateSet("C"))
-	nfa.Add("B", 'ε', NewStateSet("D"))
-	nfa.Add("C", '1', NewStateSet("D"))
-	nfa.Add("E", '0', NewStateSet("F"))
-	nfa.Add("E", 'ε', NewStateSet("B", "C"))
-	nfa.Add("F", '0', NewStateSet("D"))
+	nfa.Add("A", '0', "E")
+	nfa.Add("A", '1', "B")
+	nfa.Add("B", '1', "C")
+	nfa.Add("B", 'ε', "D")
+	nfa.Add("C", '1', "D")
+	nfa.Add("E", '0', "F")
+	nfa.Add("E", 'ε', "B", "C")
+	nfa.Add("F", '0', "D")
 
 	testString(t, closure(nfa, "A"), "{A}")
 	testString(t, closure(nfa, "E"), "{B,C,D,E}")
