@@ -10,6 +10,8 @@ import (
 )
 
 // A state is a string that uniquely identifies a state of an automaton.
+// Use plain alphanumeric characters; commas and curly braces will
+// probably break the code.
 type state string
 
 // A stateSet implements a set of states.
@@ -78,17 +80,17 @@ func (r row) col(a symbol) stateSet {
 	return r[a]
 }
 
-// A Nondeterministic Finite Automaton with ε-transitions.  NFA's are
-// not executable, but can compile to executable DFA's.
+// An NFA is a Nondeterministic Finite Automaton with ε-transitions.
+// NFA's are not executable, but can compile to executable DFA's.
 type NFA struct {
 	delta ttab
 	q0    state
 	final stateSet
 }
 
-// A (read-only) Deterministic Finite Automaton which has been compiled
-// from an NFA.  DFA's are executable, but can only be built using the
-// NFA interface.
+// A DFA is a (read-only) Deterministic Finite Automaton which has
+// been compiled from an NFA.  DFA's are executable, but can only be
+// built using the NFA interface.
 type DFA struct {
 	nfa *NFA
 }
