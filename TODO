@@ -1,3 +1,4 @@
 - Generate DOT files: https://en.wikipedia.org/wiki/DOT_(graph_description_language)
 - DFA minimization
 - RE to NFA (Thompson Algorithm?)
+- Use integers to represent state, internally.
